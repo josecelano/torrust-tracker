@@ -55,7 +55,7 @@ impl Entry for EntrySingle {
 
         match peer::ReadInfo::get_event(peer) {
             AnnounceEvent::Stopped => {
-                drop(self.swarm.remove(&peer::ReadInfo::get_id(peer)));
+                drop(self.swarm.remove(&peer::ReadInfo::get_address(peer)));
             }
             AnnounceEvent::Completed => {
                 let previous = self.swarm.upsert(Arc::new(*peer));

@@ -4,14 +4,9 @@ use std::sync::Arc;
 
 use torrust_tracker_primitives::{peer, DurationSinceUnixEpoch};
 
-// code-review: the current implementation uses the peer Id as the ``BTreeMap``
-// key. That would allow adding two identical peers except for the Id.
-// For example, two peers with the same socket address but a different peer Id
-// would be allowed. That would lead to duplicated peers in the tracker responses.
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PeerList {
-    peers: std::collections::BTreeMap<peer::Id, Arc<peer::Peer>>,
+    peers: std::collections::BTreeMap<SocketAddr, Arc<peer::Peer>>,
 }
 
 impl PeerList {
@@ -26,11 +21,11 @@ impl PeerList {
     }
 
     pub fn upsert(&mut self, value: Arc<peer::Peer>) -> Option<Arc<peer::Peer>> {
-        self.peers.insert(value.peer_id, value)
+        self.peers.insert(value.peer_addr, value)
     }
 
-    pub fn remove(&mut self, key: &peer::Id) -> Option<Arc<peer::Peer>> {
-        self.peers.remove(key)
+    pub fn remove(&mut self, socket_addr: &SocketAddr) -> Option<Arc<peer::Peer>> {
+        self.peers.remove(socket_addr)
     }
 
     pub fn remove_inactive_peers(&mut self, current_cutoff: DurationSinceUnixEpoch) {
@@ -39,8 +34,8 @@ impl PeerList {
     }
 
     #[must_use]
-    pub fn get(&self, peer_id: &peer::Id) -> Option<&Arc<peer::Peer>> {
-        self.peers.get(peer_id)
+    pub fn get(&self, socket_addr: &SocketAddr) -> Option<&Arc<peer::Peer>> {
+        self.peers.get(socket_addr)
     }
 
     #[must_use]
@@ -148,7 +143,7 @@ mod tests {
 
             peer_list.upsert(peer.into());
 
-            assert_eq!(peer_list.get(&peer.peer_id), Some(Arc::new(peer)).as_ref());
+            assert_eq!(peer_list.get(&peer.peer_addr), Some(Arc::new(peer)).as_ref());
         }
 
         #[test]
@@ -170,7 +165,7 @@ mod tests {
 
             peer_list.upsert(peer.into());
 
-            peer_list.remove(&peer.peer_id);
+            peer_list.remove(&peer.peer_addr);
 
             assert!(peer_list.is_empty());
         }
@@ -183,9 +178,9 @@ mod tests {
 
             peer_list.upsert(peer.into());
 
-            peer_list.remove(&peer.peer_id);
+            peer_list.remove(&peer.peer_addr);
 
-            assert_eq!(peer_list.get(&peer.peer_id), None);
+            assert_eq!(peer_list.get(&peer.peer_addr), None);
         }
 
         #[test]
