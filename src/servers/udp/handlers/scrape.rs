@@ -15,6 +15,7 @@ use crate::packages::udp_tracker_core;
 use crate::servers::udp::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
+use crate::servers::udp::services;
 
 /// It handles the `Scrape` request. Refer to [`Scrape`](crate::servers::udp#scrape)
 /// request for more information.
@@ -49,7 +50,7 @@ pub async fn handle_scrape(
         info_hashes.push((*info_hash).into());
     }
 
-    let scrape_data = scrape_handler.scrape(&info_hashes).await;
+    let scrape_data = services::scrape::invoke(scrape_handler, opt_udp_stats_event_sender, &info_hashes, remote_addr).await;
 
     let mut torrent_stats: Vec<TorrentScrapeStatistics> = Vec::new();
 
@@ -66,21 +67,6 @@ pub async fn handle_scrape(
         };
 
         torrent_stats.push(scrape_entry);
-    }
-
-    if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
-        match remote_addr {
-            SocketAddr::V4(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp4Scrape)
-                    .await;
-            }
-            SocketAddr::V6(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp6Scrape)
-                    .await;
-            }
-        }
     }
 
     let response = ScrapeResponse {
