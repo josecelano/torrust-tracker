@@ -28,11 +28,11 @@ use torrust_tracker_primitives::peer;
 
 use super::common::auth::map_auth_error_to_error_response;
 use crate::packages::http_tracker_core;
+use crate::packages::http_tracker_core::services::{self};
 use crate::servers::http::v1::extractors::announce_request::ExtractRequest;
 use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
 use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
 use crate::servers::http::v1::handlers::common::auth;
-use crate::servers::http::v1::services::{self};
 use crate::CurrentClock;
 
 /// It handles the `announce` request when the HTTP tracker does not require

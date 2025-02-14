@@ -20,10 +20,10 @@ use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
 
 use crate::packages::http_tracker_core;
+use crate::packages::http_tracker_core::services;
 use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
 use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
 use crate::servers::http::v1::extractors::scrape_request::ExtractRequest;
-use crate::servers::http::v1::services;
 
 /// It handles the `scrape` request when the HTTP tracker is configured
 /// to run in `public` mode.

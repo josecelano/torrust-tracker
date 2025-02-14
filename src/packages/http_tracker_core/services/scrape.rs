@@ -161,13 +161,13 @@ mod tests {
         use torrust_tracker_primitives::core::ScrapeData;
         use torrust_tracker_primitives::swarm_metadata::SwarmMetadata;
 
-        use crate::packages::{self, http_tracker_core};
-        use crate::servers::http::test_helpers::tests::sample_info_hash;
-        use crate::servers::http::v1::services::scrape::invoke;
-        use crate::servers::http::v1::services::scrape::tests::{
+        use crate::packages::http_tracker_core::services::scrape::invoke;
+        use crate::packages::http_tracker_core::services::scrape::tests::{
             initialize_announce_and_scrape_handlers_for_public_tracker, initialize_scrape_handler, sample_info_hashes,
             sample_peer, MockHttpStatsEventSender,
         };
+        use crate::packages::{self, http_tracker_core};
+        use crate::servers::http::test_helpers::tests::sample_info_hash;
 
         #[tokio::test]
         async fn it_should_return_the_scrape_data_for_a_torrent() {
@@ -247,12 +247,12 @@ mod tests {
         use mockall::predicate::eq;
         use torrust_tracker_primitives::core::ScrapeData;
 
-        use crate::packages::{self, http_tracker_core};
-        use crate::servers::http::test_helpers::tests::sample_info_hash;
-        use crate::servers::http::v1::services::scrape::fake;
-        use crate::servers::http::v1::services::scrape::tests::{
+        use crate::packages::http_tracker_core::services::scrape::fake;
+        use crate::packages::http_tracker_core::services::scrape::tests::{
             initialize_announce_and_scrape_handlers_for_public_tracker, sample_info_hashes, sample_peer, MockHttpStatsEventSender,
         };
+        use crate::packages::{self, http_tracker_core};
+        use crate::servers::http::test_helpers::tests::sample_info_hash;
 
         #[tokio::test]
         async fn it_should_always_return_the_zeroed_scrape_data_for_a_torrent() {

@@ -164,11 +164,11 @@ mod tests {
 
         use super::{sample_peer_using_ipv4, sample_peer_using_ipv6};
         use crate::packages::http_tracker_core;
-        use crate::servers::http::test_helpers::tests::sample_info_hash;
-        use crate::servers::http::v1::services::announce::invoke;
-        use crate::servers::http::v1::services::announce::tests::{
+        use crate::packages::http_tracker_core::services::announce::invoke;
+        use crate::packages::http_tracker_core::services::announce::tests::{
             initialize_core_tracker_services, sample_peer, MockHttpStatsEventSender,
         };
+        use crate::servers::http::test_helpers::tests::sample_info_hash;
 
         fn initialize_announce_handler() -> Arc<AnnounceHandler> {
             let config = configuration::ephemeral();
