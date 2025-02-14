@@ -6,13 +6,11 @@ use std::sync::Arc;
 use aquatic_udp_protocol::{
     NumberOfDownloads, NumberOfPeers, Response, ScrapeRequest, ScrapeResponse, TorrentScrapeStatistics, TransactionId,
 };
-use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
 use crate::packages::udp_tracker_core;
-use crate::packages::udp_tracker_core::services;
 use crate::servers::udp::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
@@ -37,6 +35,8 @@ pub async fn handle_scrape(
 
     tracing::trace!("handle scrape");
 
+    // todo: move authentication to `udp_tracker_core::services::scrape::handle_scrape`
+
     check(
         &request.connection_id,
         gen_remote_fingerprint(&remote_addr),
@@ -44,13 +44,10 @@ pub async fn handle_scrape(
     )
     .map_err(|e| (e, request.transaction_id))?;
 
-    // Convert from aquatic infohashes
-    let mut info_hashes: Vec<InfoHash> = vec![];
-    for info_hash in &request.info_hashes {
-        info_hashes.push((*info_hash).into());
-    }
+    let scrape_data =
+        udp_tracker_core::services::scrape::handle_scrape(remote_addr, request, scrape_handler, opt_udp_stats_event_sender).await;
 
-    let scrape_data = services::scrape::invoke(scrape_handler, opt_udp_stats_event_sender, &info_hashes, remote_addr).await;
+    // todo: extract `build_response` function.
 
     let mut torrent_stats: Vec<TorrentScrapeStatistics> = Vec::new();
 
