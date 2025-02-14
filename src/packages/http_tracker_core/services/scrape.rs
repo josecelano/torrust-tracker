@@ -10,8 +10,13 @@
 use std::net::IpAddr;
 use std::sync::Arc;
 
+use bittorrent_http_protocol::v1::requests::scrape::Scrape;
+use bittorrent_http_protocol::v1::responses;
+use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_primitives::info_hash::InfoHash;
+use bittorrent_tracker_core::authentication::service::AuthenticationService;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
+use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
 
 use crate::packages::http_tracker_core;
@@ -26,6 +31,43 @@ use crate::packages::http_tracker_core;
 /// > **NOTICE**: as the HTTP tracker does not requires a connection request
 /// > like the UDP tracker, the number of TCP connections is incremented for
 /// > each `scrape` request.
+///
+/// # Errors
+///
+/// This function will return an error if:
+///
+/// - There is an error when resolving the client IP address.
+#[allow(clippy::too_many_arguments)]
+pub async fn handle_scrape(
+    core_config: &Arc<Core>,
+    scrape_handler: &Arc<ScrapeHandler>,
+    _authentication_service: &Arc<AuthenticationService>,
+    opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    scrape_request: &Scrape,
+    client_ip_sources: &ClientIpSources,
+    return_real_scrape_data: bool,
+) -> Result<ScrapeData, responses::error::Error> {
+    // Authorization for scrape requests is handled at the `http_tracker_core`
+    // level for each torrent.
+
+    let peer_ip = match peer_ip_resolver::invoke(core_config.net.on_reverse_proxy, client_ip_sources) {
+        Ok(peer_ip) => peer_ip,
+        Err(error) => return Err(responses::error::Error::from(error)),
+    };
+
+    if return_real_scrape_data {
+        Ok(invoke(
+            scrape_handler,
+            opt_http_stats_event_sender,
+            &scrape_request.info_hashes,
+            &peer_ip,
+        )
+        .await)
+    } else {
+        Ok(http_tracker_core::services::scrape::fake(opt_http_stats_event_sender, &scrape_request.info_hashes, &peer_ip).await)
+    }
+}
+
 pub async fn invoke(
     scrape_handler: &Arc<ScrapeHandler>,
     opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
