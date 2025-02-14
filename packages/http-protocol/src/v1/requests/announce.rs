@@ -2,18 +2,21 @@
 //!
 //! Data structures and logic for parsing the `announce` request.
 use std::fmt;
+use std::net::{IpAddr, SocketAddr};
 use std::panic::Location;
 use std::str::FromStr;
 
-use aquatic_udp_protocol::{NumberOfBytes, PeerId};
+use aquatic_udp_protocol::{AnnounceEvent, NumberOfBytes, PeerId};
 use bittorrent_primitives::info_hash::{self, InfoHash};
 use thiserror::Error;
+use torrust_tracker_clock::clock::Time;
 use torrust_tracker_located_error::{Located, LocatedError};
 use torrust_tracker_primitives::peer;
 
 use crate::percent_encoding::{percent_decode_info_hash, percent_decode_peer_id};
 use crate::v1::query::{ParseQueryError, Query};
 use crate::v1::responses;
+use crate::CurrentClock;
 
 // Query param names
 const INFO_HASH: &str = "info_hash";
@@ -370,6 +373,34 @@ fn extract_numwant(query: &Query) -> Result<Option<u32>, ParseAnnounceQueryError
             }),
         },
         None => Ok(None),
+    }
+}
+
+/// It builds a `Peer` from the announce request.
+///
+/// It ignores the peer address in the announce request params.
+#[must_use]
+pub fn peer_from_request(announce_request: &Announce, peer_ip: &IpAddr) -> peer::Peer {
+    peer::Peer {
+        peer_id: announce_request.peer_id,
+        peer_addr: SocketAddr::new(*peer_ip, announce_request.port),
+        updated: CurrentClock::now(),
+        uploaded: announce_request.uploaded.unwrap_or(NumberOfBytes::new(0)),
+        downloaded: announce_request.downloaded.unwrap_or(NumberOfBytes::new(0)),
+        left: announce_request.left.unwrap_or(NumberOfBytes::new(0)),
+        event: map_to_torrust_event(&announce_request.event),
+    }
+}
+
+#[must_use]
+pub fn map_to_torrust_event(event: &Option<Event>) -> AnnounceEvent {
+    match event {
+        Some(event) => match &event {
+            Event::Started => AnnounceEvent::Started,
+            Event::Stopped => AnnounceEvent::Stopped,
+            Event::Completed => AnnounceEvent::Completed,
+        },
+        None => AnnounceEvent::None,
     }
 }
 
