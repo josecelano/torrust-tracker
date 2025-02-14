@@ -8,17 +8,16 @@ use aquatic_udp_protocol::{
     Port, Response, ResponsePeer, TransactionId,
 };
 use bittorrent_primitives::info_hash::InfoHash;
-use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
+use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::whitelist;
 use torrust_tracker_configuration::Core;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
-use crate::packages::udp_tracker_core::{self, services};
+use crate::packages::udp_tracker_core::{self};
 use crate::servers::udp::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
-use crate::servers::udp::peer_builder;
 
 /// It handles the `Announce` request. Refer to [`Announce`](crate::servers::udp#announce)
 /// request for more information.
@@ -44,6 +43,8 @@ pub async fn handle_announce(
 
     tracing::trace!("handle announce");
 
+    // todo: move authentication to `udp_tracker_core::services::announce::handle_announce`
+
     check(
         &request.connection_id,
         gen_remote_fingerprint(&remote_addr),
@@ -51,29 +52,20 @@ pub async fn handle_announce(
     )
     .map_err(|e| (e, request.transaction_id))?;
 
-    let info_hash = request.info_hash.into();
-    let remote_client_ip = remote_addr.ip();
-
-    // Authorization
-    whitelist_authorization
-        .authorize(&info_hash)
-        .await
-        .map_err(|e| Error::TrackerError {
-            source: (Arc::new(e) as Arc<dyn std::error::Error + Send + Sync>).into(),
-        })
-        .map_err(|e| (e, request.transaction_id))?;
-
-    let mut peer = peer_builder::from_request(request, &remote_client_ip);
-    let peers_wanted: PeersWanted = i32::from(request.peers_wanted.0).into();
-
-    let response = services::announce::invoke(
-        announce_handler.clone(),
-        opt_udp_stats_event_sender.clone(),
-        info_hash,
-        &mut peer,
-        &peers_wanted,
+    let response = udp_tracker_core::services::announce::handle_announce(
+        remote_addr,
+        request,
+        announce_handler,
+        whitelist_authorization,
+        opt_udp_stats_event_sender,
     )
-    .await;
+    .await
+    .map_err(|e| Error::TrackerError {
+        source: (Arc::new(e) as Arc<dyn std::error::Error + Send + Sync>).into(),
+    })
+    .map_err(|e| (e, request.transaction_id))?;
+
+    // todo: extract `build_response` function.
 
     #[allow(clippy::cast_possible_truncation)]
     if remote_addr.is_ipv4() {
