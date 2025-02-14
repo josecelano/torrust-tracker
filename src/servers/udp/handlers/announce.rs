@@ -18,7 +18,7 @@ use crate::packages::udp_tracker_core;
 use crate::servers::udp::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
-use crate::servers::udp::peer_builder;
+use crate::servers::udp::{peer_builder, services};
 
 /// It handles the `Announce` request. Refer to [`Announce`](crate::servers::udp#announce)
 /// request for more information.
@@ -66,22 +66,14 @@ pub async fn handle_announce(
     let mut peer = peer_builder::from_request(request, &remote_client_ip);
     let peers_wanted: PeersWanted = i32::from(request.peers_wanted.0).into();
 
-    let response = announce_handler.announce(&info_hash, &mut peer, &remote_client_ip, &peers_wanted);
-
-    if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
-        match remote_client_ip {
-            IpAddr::V4(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp4Announce)
-                    .await;
-            }
-            IpAddr::V6(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp6Announce)
-                    .await;
-            }
-        }
-    }
+    let response = services::announce::invoke(
+        announce_handler.clone(),
+        opt_udp_stats_event_sender.clone(),
+        info_hash,
+        &mut peer,
+        &peers_wanted,
+    )
+    .await;
 
     #[allow(clippy::cast_possible_truncation)]
     if remote_addr.is_ipv4() {
