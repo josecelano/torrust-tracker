@@ -12,10 +12,10 @@ use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
 use crate::packages::udp_tracker_core;
+use crate::packages::udp_tracker_core::services;
 use crate::servers::udp::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
-use crate::servers::udp::services;
 
 /// It handles the `Scrape` request. Refer to [`Scrape`](crate::servers::udp#scrape)
 /// request for more information.

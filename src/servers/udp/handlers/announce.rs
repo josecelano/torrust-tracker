@@ -14,11 +14,11 @@ use torrust_tracker_configuration::Core;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
-use crate::packages::udp_tracker_core;
+use crate::packages::udp_tracker_core::{self, services};
 use crate::servers::udp::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
-use crate::servers::udp::{peer_builder, services};
+use crate::servers::udp::peer_builder;
 
 /// It handles the `Announce` request. Refer to [`Announce`](crate::servers::udp#announce)
 /// request for more information.
