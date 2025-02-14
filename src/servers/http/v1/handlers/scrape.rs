@@ -11,7 +11,7 @@ use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use bittorrent_http_protocol::v1::requests::scrape::Scrape;
 use bittorrent_http_protocol::v1::responses;
-use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
+use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
 use bittorrent_tracker_core::authentication::Key;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
@@ -23,7 +23,6 @@ use crate::packages::http_tracker_core;
 use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
 use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
 use crate::servers::http::v1::extractors::scrape_request::ExtractRequest;
-use crate::servers::http::v1::services;
 
 /// It handles the `scrape` request when the HTTP tracker is configured
 /// to run in `public` mode.
@@ -111,12 +110,6 @@ async fn handle(
     build_response(scrape_data)
 }
 
-/* code-review: authentication, authorization and peer IP resolution could be moved
-   from the handler (Axum) layer into the app layer `services::announce::invoke`.
-   That would make the handler even simpler and the code more reusable and decoupled from Axum.
-   See https://github.com/torrust/torrust-tracker/discussions/240.
-*/
-
 #[allow(clippy::too_many_arguments)]
 async fn handle_scrape(
     core_config: &Arc<Core>,
@@ -127,6 +120,8 @@ async fn handle_scrape(
     client_ip_sources: &ClientIpSources,
     maybe_key: Option<Key>,
 ) -> Result<ScrapeData, responses::error::Error> {
+    // todo: move authentication inside `http_tracker_core::services::scrape::handle_scrape`
+
     // Authentication
     let return_real_scrape_data = if core_config.private {
         match maybe_key {
@@ -140,25 +135,16 @@ async fn handle_scrape(
         true
     };
 
-    // Authorization for scrape requests is handled at the `Tracker` level
-    // for each torrent.
-
-    let peer_ip = match peer_ip_resolver::invoke(core_config.net.on_reverse_proxy, client_ip_sources) {
-        Ok(peer_ip) => peer_ip,
-        Err(error) => return Err(responses::error::Error::from(error)),
-    };
-
-    if return_real_scrape_data {
-        Ok(services::scrape::invoke(
-            scrape_handler,
-            opt_http_stats_event_sender,
-            &scrape_request.info_hashes,
-            &peer_ip,
-        )
-        .await)
-    } else {
-        Ok(services::scrape::fake(opt_http_stats_event_sender, &scrape_request.info_hashes, &peer_ip).await)
-    }
+    http_tracker_core::services::scrape::handle_scrape(
+        core_config,
+        scrape_handler,
+        authentication_service,
+        opt_http_stats_event_sender,
+        scrape_request,
+        client_ip_sources,
+        return_real_scrape_data,
+    )
+    .await
 }
 
 fn build_response(scrape_data: ScrapeData) -> Response {

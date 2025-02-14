@@ -5,26 +5,22 @@
 //!
 //! The handlers perform the authentication and authorization of the request,
 //! and resolve the client IP address.
-use std::net::{IpAddr, SocketAddr};
 use std::panic::Location;
 use std::sync::Arc;
 
-use aquatic_udp_protocol::{AnnounceEvent, NumberOfBytes};
+use aquatic_udp_protocol::AnnounceEvent;
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use bittorrent_http_protocol::v1::requests::announce::{Announce, Compact, Event};
 use bittorrent_http_protocol::v1::responses::{self};
-use bittorrent_http_protocol::v1::services::peer_ip_resolver;
 use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
-use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
+use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
 use bittorrent_tracker_core::authentication::Key;
 use bittorrent_tracker_core::whitelist;
 use hyper::StatusCode;
-use torrust_tracker_clock::clock::Time;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::AnnounceData;
-use torrust_tracker_primitives::peer;
 
 use super::common::auth::map_auth_error_to_error_response;
 use crate::packages::http_tracker_core;
@@ -32,8 +28,6 @@ use crate::servers::http::v1::extractors::announce_request::ExtractRequest;
 use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
 use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
 use crate::servers::http::v1::handlers::common::auth;
-use crate::servers::http::v1::services::{self};
-use crate::CurrentClock;
 
 /// It handles the `announce` request when the HTTP tracker does not require
 /// authentication (no PATH `key` parameter required).
@@ -129,12 +123,6 @@ async fn handle(
     build_response(announce_request, announce_data)
 }
 
-/* code-review: authentication, authorization and peer IP resolution could be moved
-   from the handler (Axum) layer into the app layer `services::announce::invoke`.
-   That would make the handler even simpler and the code more reusable and decoupled from Axum.
-   See https://github.com/torrust/torrust-tracker/discussions/240.
-*/
-
 #[allow(clippy::too_many_arguments)]
 async fn handle_announce(
     core_config: &Arc<Core>,
@@ -146,6 +134,8 @@ async fn handle_announce(
     client_ip_sources: &ClientIpSources,
     maybe_key: Option<Key>,
 ) -> Result<AnnounceData, responses::error::Error> {
+    // todo: move authentication inside `http_tracker_core::services::announce::handle_announce`
+
     // Authentication
     if core_config.private {
         match maybe_key {
@@ -161,33 +151,16 @@ async fn handle_announce(
         }
     }
 
-    // Authorization
-    match whitelist_authorization.authorize(&announce_request.info_hash).await {
-        Ok(()) => (),
-        Err(error) => return Err(responses::error::Error::from(error)),
-    }
-
-    let peer_ip = match peer_ip_resolver::invoke(core_config.net.on_reverse_proxy, client_ip_sources) {
-        Ok(peer_ip) => peer_ip,
-        Err(error) => return Err(responses::error::Error::from(error)),
-    };
-
-    let mut peer = peer_from_request(announce_request, &peer_ip);
-    let peers_wanted = match announce_request.numwant {
-        Some(numwant) => PeersWanted::only(numwant),
-        None => PeersWanted::AsManyAsPossible,
-    };
-
-    let announce_data = services::announce::invoke(
-        announce_handler.clone(),
-        opt_http_stats_event_sender.clone(),
-        announce_request.info_hash,
-        &mut peer,
-        &peers_wanted,
+    http_tracker_core::services::announce::handle_announce(
+        &core_config.clone(),
+        &announce_handler.clone(),
+        &authentication_service.clone(),
+        &whitelist_authorization.clone(),
+        &opt_http_stats_event_sender.clone(),
+        announce_request,
+        client_ip_sources,
     )
-    .await;
-
-    Ok(announce_data)
+    .await
 }
 
 fn build_response(announce_request: &Announce, announce_data: AnnounceData) -> Response {
@@ -199,22 +172,6 @@ fn build_response(announce_request: &Announce, announce_data: AnnounceData) -> R
         let response: responses::Announce<responses::Normal> = announce_data.into();
         let bytes: Vec<u8> = response.data.into();
         (StatusCode::OK, bytes).into_response()
-    }
-}
-
-/// It builds a `Peer` from the announce request.
-///
-/// It ignores the peer address in the announce request params.
-#[must_use]
-fn peer_from_request(announce_request: &Announce, peer_ip: &IpAddr) -> peer::Peer {
-    peer::Peer {
-        peer_id: announce_request.peer_id,
-        peer_addr: SocketAddr::new(*peer_ip, announce_request.port),
-        updated: CurrentClock::now(),
-        uploaded: announce_request.uploaded.unwrap_or(NumberOfBytes::new(0)),
-        downloaded: announce_request.downloaded.unwrap_or(NumberOfBytes::new(0)),
-        left: announce_request.left.unwrap_or(NumberOfBytes::new(0)),
-        event: map_to_torrust_event(&announce_request.event),
     }
 }
 

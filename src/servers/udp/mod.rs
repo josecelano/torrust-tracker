@@ -640,7 +640,6 @@ use std::net::SocketAddr;
 pub mod connection_cookie;
 pub mod error;
 pub mod handlers;
-pub mod peer_builder;
 pub mod server;
 
 pub const UDP_TRACKER_LOG_TARGET: &str = "UDP TRACKER";

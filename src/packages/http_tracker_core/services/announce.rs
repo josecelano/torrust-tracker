@@ -10,8 +10,14 @@
 use std::net::IpAddr;
 use std::sync::Arc;
 
+use bittorrent_http_protocol::v1::requests::announce::{peer_from_request, Announce};
+use bittorrent_http_protocol::v1::responses;
+use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
+use bittorrent_tracker_core::authentication::service::AuthenticationService;
+use bittorrent_tracker_core::whitelist;
+use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::AnnounceData;
 use torrust_tracker_primitives::peer;
 
@@ -27,6 +33,53 @@ use crate::packages::http_tracker_core;
 /// > **NOTICE**: as the HTTP tracker does not requires a connection request
 /// > like the UDP tracker, the number of TCP connections is incremented for
 /// > each `announce` request.
+///
+/// # Errors
+///
+/// This function will return an error if:
+///
+/// - The tracker is running in `listed` mode and the torrent is not whitelisted.
+/// - There is an error when resolving the client IP address.
+#[allow(clippy::too_many_arguments)]
+pub async fn handle_announce(
+    core_config: &Arc<Core>,
+    announce_handler: &Arc<AnnounceHandler>,
+    _authentication_service: &Arc<AuthenticationService>,
+    whitelist_authorization: &Arc<whitelist::authorization::WhitelistAuthorization>,
+    opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    announce_request: &Announce,
+    client_ip_sources: &ClientIpSources,
+) -> Result<AnnounceData, responses::error::Error> {
+    // Authorization
+    match whitelist_authorization.authorize(&announce_request.info_hash).await {
+        Ok(()) => (),
+        Err(error) => return Err(responses::error::Error::from(error)),
+    }
+
+    let peer_ip = match peer_ip_resolver::invoke(core_config.net.on_reverse_proxy, client_ip_sources) {
+        Ok(peer_ip) => peer_ip,
+        Err(error) => return Err(responses::error::Error::from(error)),
+    };
+
+    let mut peer = peer_from_request(announce_request, &peer_ip);
+
+    let peers_wanted = match announce_request.numwant {
+        Some(numwant) => PeersWanted::only(numwant),
+        None => PeersWanted::AsManyAsPossible,
+    };
+
+    let announce_data = invoke(
+        announce_handler.clone(),
+        opt_http_stats_event_sender.clone(),
+        announce_request.info_hash,
+        &mut peer,
+        &peers_wanted,
+    )
+    .await;
+
+    Ok(announce_data)
+}
+
 pub async fn invoke(
     announce_handler: Arc<AnnounceHandler>,
     opt_http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
@@ -164,11 +217,11 @@ mod tests {
 
         use super::{sample_peer_using_ipv4, sample_peer_using_ipv6};
         use crate::packages::http_tracker_core;
-        use crate::servers::http::test_helpers::tests::sample_info_hash;
-        use crate::servers::http::v1::services::announce::invoke;
-        use crate::servers::http::v1::services::announce::tests::{
+        use crate::packages::http_tracker_core::services::announce::invoke;
+        use crate::packages::http_tracker_core::services::announce::tests::{
             initialize_core_tracker_services, sample_peer, MockHttpStatsEventSender,
         };
+        use crate::servers::http::test_helpers::tests::sample_info_hash;
 
         fn initialize_announce_handler() -> Arc<AnnounceHandler> {
             let config = configuration::ephemeral();
