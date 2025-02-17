@@ -15,10 +15,11 @@ use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
 use bittorrent_tracker_core::error::AnnounceError;
 use bittorrent_tracker_core::whitelist;
+use bittorrent_udp_protocol::peer_builder;
 use torrust_tracker_primitives::core::AnnounceData;
 use torrust_tracker_primitives::peer;
 
-use crate::packages::udp_tracker_core::{self, peer_builder};
+use crate::packages::udp_tracker_core::{self};
 
 /// It handles the `Announce` request.
 ///
