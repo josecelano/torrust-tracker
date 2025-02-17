@@ -8,6 +8,7 @@
 //! It also sends an [`http_tracker_core::statistics::event::Event`]
 //! because events are specific for the HTTP tracker.
 use std::net::IpAddr;
+use std::panic::Location;
 use std::sync::Arc;
 
 use bittorrent_http_protocol::v1::requests::announce::{peer_from_request, Announce};
@@ -15,6 +16,7 @@ use bittorrent_http_protocol::v1::responses;
 use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
+use bittorrent_tracker_core::authentication::{self, Key};
 use bittorrent_tracker_core::whitelist;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::AnnounceData;
@@ -42,12 +44,28 @@ use crate::packages::http_tracker_core;
 pub async fn handle_announce(
     core_config: &Arc<Core>,
     announce_handler: &Arc<AnnounceHandler>,
-    _authentication_service: &Arc<AuthenticationService>,
+    authentication_service: &Arc<AuthenticationService>,
     whitelist_authorization: &Arc<whitelist::authorization::WhitelistAuthorization>,
     opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
     announce_request: &Announce,
     client_ip_sources: &ClientIpSources,
+    maybe_key: Option<Key>,
 ) -> Result<AnnounceData, responses::error::Error> {
+    // Authentication
+    if core_config.private {
+        match maybe_key {
+            Some(key) => match authentication_service.authenticate(&key).await {
+                Ok(()) => (),
+                Err(error) => return Err(error.into()),
+            },
+            None => {
+                return Err(responses::error::Error::from(authentication::key::Error::MissingAuthKey {
+                    location: Location::caller(),
+                }))
+            }
+        }
+    }
+
     // Authorization
     match whitelist_authorization.authorize(&announce_request.info_hash).await {
         Ok(()) => (),
@@ -257,6 +275,7 @@ mod tests {
                 &core_http_tracker_services.http_stats_event_sender,
                 &announce_request,
                 &client_ip_sources,
+                None,
             )
             .await
             .unwrap();
@@ -300,6 +319,7 @@ mod tests {
                 &core_http_tracker_services.http_stats_event_sender,
                 &announce_request,
                 &client_ip_sources,
+                None,
             )
             .await
             .unwrap();
@@ -351,6 +371,7 @@ mod tests {
                 &core_http_tracker_services.http_stats_event_sender,
                 &announce_request,
                 &client_ip_sources,
+                None,
             )
             .await
             .unwrap();
@@ -383,6 +404,7 @@ mod tests {
                 &core_http_tracker_services.http_stats_event_sender,
                 &announce_request,
                 &client_ip_sources,
+                None,
             )
             .await
             .unwrap();

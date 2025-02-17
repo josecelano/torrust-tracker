@@ -141,5 +141,9 @@ pub async fn assert_cannot_parse_query_params_error_response(response: Response,
 pub async fn assert_authentication_error_response(response: Response) {
     assert_eq!(response.status(), 200);
 
-    assert_bencoded_error(&response.text().await.unwrap(), "Authentication error", Location::caller());
+    assert_bencoded_error(
+        &response.text().await.unwrap(),
+        "Tracker authentication error",
+        Location::caller(),
+    );
 }
