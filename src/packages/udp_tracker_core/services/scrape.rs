@@ -30,10 +30,7 @@ pub async fn handle_scrape(
     opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
 ) -> Result<ScrapeData, ScrapeError> {
     // Convert from aquatic infohashes
-    let mut info_hashes: Vec<InfoHash> = vec![];
-    for info_hash in &request.info_hashes {
-        info_hashes.push((*info_hash).into());
-    }
+    let info_hashes: Vec<InfoHash> = request.info_hashes.iter().map(|&x| x.into()).collect();
 
     let scrape_data = scrape_handler.scrape(&info_hashes).await?;
 
