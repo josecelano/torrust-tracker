@@ -46,14 +46,27 @@ pub async fn handle_announce(
     let mut peer = peer_builder::from_request(request, &remote_client_ip);
     let peers_wanted: PeersWanted = i32::from(request.peers_wanted.0).into();
 
-    let announce_data = invoke(
-        announce_handler.clone(),
-        opt_udp_stats_event_sender.clone(),
-        info_hash,
-        &mut peer,
-        &peers_wanted,
-    )
-    .await?;
+    let original_peer_ip = peer.peer_addr.ip();
+
+    // The tracker could change the original peer ip
+    let announce_data = announce_handler
+        .announce(&info_hash, &mut peer, &original_peer_ip, &peers_wanted)
+        .await?;
+
+    if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
+        match original_peer_ip {
+            IpAddr::V4(_) => {
+                udp_stats_event_sender
+                    .send_event(udp_tracker_core::statistics::event::Event::Udp4Announce)
+                    .await;
+            }
+            IpAddr::V6(_) => {
+                udp_stats_event_sender
+                    .send_event(udp_tracker_core::statistics::event::Event::Udp6Announce)
+                    .await;
+            }
+        }
+    }
 
     Ok(announce_data)
 }
