@@ -14,8 +14,6 @@ use bittorrent_http_protocol::v1::requests::scrape::Scrape;
 use bittorrent_http_protocol::v1::responses;
 use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_primitives::info_hash::InfoHash;
-use bittorrent_tracker_core::authentication::service::AuthenticationService;
-use bittorrent_tracker_core::error::ScrapeError;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
@@ -42,13 +40,12 @@ use crate::packages::http_tracker_core;
 pub async fn handle_scrape(
     core_config: &Arc<Core>,
     scrape_handler: &Arc<ScrapeHandler>,
-    _authentication_service: &Arc<AuthenticationService>,
     opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
     scrape_request: &Scrape,
     client_ip_sources: &ClientIpSources,
-    return_real_scrape_data: bool,
+    return_fake_scrape_data: bool,
 ) -> Result<ScrapeData, responses::error::Error> {
-    // Authorization for scrape requests is handled at the `http_tracker_core`
+    // Authorization for scrape requests is handled at the `bittorrent-_racker_core`
     // level for each torrent.
 
     let peer_ip = match peer_ip_resolver::invoke(core_config.net.on_reverse_proxy, client_ip_sources) {
@@ -56,33 +53,15 @@ pub async fn handle_scrape(
         Err(error) => return Err(responses::error::Error::from(error)),
     };
 
-    if return_real_scrape_data {
-        let scrape_data = invoke(
-            scrape_handler,
-            opt_http_stats_event_sender,
-            &scrape_request.info_hashes,
-            &peer_ip,
-        )
-        .await?;
-
-        Ok(scrape_data)
-    } else {
-        Ok(http_tracker_core::services::scrape::fake(opt_http_stats_event_sender, &scrape_request.info_hashes, &peer_ip).await)
+    if return_fake_scrape_data {
+        return Ok(
+            http_tracker_core::services::scrape::fake(opt_http_stats_event_sender, &scrape_request.info_hashes, &peer_ip).await,
+        );
     }
-}
 
-/// # Errors
-///
-/// This function will return an error if the tracker core scrape handler fails.
-pub async fn invoke(
-    scrape_handler: &Arc<ScrapeHandler>,
-    opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
-    info_hashes: &Vec<InfoHash>,
-    original_peer_ip: &IpAddr,
-) -> Result<ScrapeData, ScrapeError> {
-    let scrape_data = scrape_handler.scrape(info_hashes).await?;
+    let scrape_data = scrape_handler.scrape(&scrape_request.info_hashes).await?;
 
-    send_scrape_event(original_peer_ip, opt_http_stats_event_sender).await;
+    send_scrape_event(&peer_ip, opt_http_stats_event_sender).await;
 
     Ok(scrape_data)
 }
@@ -141,6 +120,7 @@ mod tests {
     use futures::future::BoxFuture;
     use mockall::mock;
     use tokio::sync::mpsc::error::SendError;
+    use torrust_tracker_configuration::Configuration;
     use torrust_tracker_primitives::{peer, DurationSinceUnixEpoch};
     use torrust_tracker_test_helpers::configuration;
 
@@ -148,8 +128,12 @@ mod tests {
     use crate::servers::http::test_helpers::tests::sample_info_hash;
 
     fn initialize_announce_and_scrape_handlers_for_public_tracker() -> (Arc<AnnounceHandler>, Arc<ScrapeHandler>) {
-        let config = configuration::ephemeral_public();
+        initialize_announce_and_scrape_handlers_with_configuration(&configuration::ephemeral_public())
+    }
 
+    fn initialize_announce_and_scrape_handlers_with_configuration(
+        config: &Configuration,
+    ) -> (Arc<AnnounceHandler>, Arc<ScrapeHandler>) {
         let database = initialize_database(&config.core);
         let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
         let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&config.core, &in_memory_whitelist.clone()));
@@ -182,9 +166,7 @@ mod tests {
         }
     }
 
-    fn initialize_scrape_handler() -> Arc<ScrapeHandler> {
-        let config = configuration::ephemeral();
-
+    fn initialize_scrape_handler_with_config(config: &Configuration) -> Arc<ScrapeHandler> {
         let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
         let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&config.core, &in_memory_whitelist.clone()));
         let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
@@ -205,31 +187,37 @@ mod tests {
         use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
         use std::sync::Arc;
 
+        use bittorrent_http_protocol::v1::requests::scrape::Scrape;
+        use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
         use bittorrent_tracker_core::announce_handler::PeersWanted;
         use mockall::predicate::eq;
         use torrust_tracker_primitives::core::ScrapeData;
         use torrust_tracker_primitives::swarm_metadata::SwarmMetadata;
+        use torrust_tracker_test_helpers::configuration;
 
-        use crate::packages::http_tracker_core::services::scrape::invoke;
+        use crate::packages::http_tracker_core::services::scrape::handle_scrape;
         use crate::packages::http_tracker_core::services::scrape::tests::{
-            initialize_announce_and_scrape_handlers_for_public_tracker, initialize_scrape_handler, sample_info_hashes,
-            sample_peer, MockHttpStatsEventSender,
+            initialize_announce_and_scrape_handlers_with_configuration, initialize_scrape_handler_with_config,
+            sample_info_hashes, sample_peer, MockHttpStatsEventSender,
         };
         use crate::packages::{self, http_tracker_core};
         use crate::servers::http::test_helpers::tests::sample_info_hash;
 
         #[tokio::test]
         async fn it_should_return_the_scrape_data_for_a_torrent() {
+            let configuration = configuration::ephemeral_public();
+            let core_config = Arc::new(configuration.core.clone());
+
             let (http_stats_event_sender, _http_stats_repository) =
                 packages::http_tracker_core::statistics::setup::factory(false);
             let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
-            let (announce_handler, scrape_handler) = initialize_announce_and_scrape_handlers_for_public_tracker();
+            let (announce_handler, scrape_handler) = initialize_announce_and_scrape_handlers_with_configuration(&configuration);
 
             let info_hash = sample_info_hash();
             let info_hashes = vec![info_hash];
 
-            // Announce a new peer to force scrape data to contain not zeroed data
+            // Announce a new peer to force scrape data to contain non zeroed data
             let mut peer = sample_peer();
             let original_peer_ip = peer.ip();
             announce_handler
@@ -237,9 +225,25 @@ mod tests {
                 .await
                 .unwrap();
 
-            let scrape_data = invoke(&scrape_handler, &http_stats_event_sender, &info_hashes, &original_peer_ip)
-                .await
-                .unwrap();
+            let scrape_request = Scrape {
+                info_hashes: info_hashes.clone(),
+            };
+
+            let client_ip_sources = ClientIpSources {
+                right_most_x_forwarded_for: None,
+                connection_info_ip: Some(original_peer_ip),
+            };
+
+            let scrape_data = handle_scrape(
+                &core_config,
+                &scrape_handler,
+                &http_stats_event_sender,
+                &scrape_request,
+                &client_ip_sources,
+                false,
+            )
+            .await
+            .unwrap();
 
             let mut expected_scrape_data = ScrapeData::empty();
             expected_scrape_data.add_file(
@@ -256,6 +260,8 @@ mod tests {
 
         #[tokio::test]
         async fn it_should_send_the_tcp_4_scrape_event_when_the_peer_uses_ipv4() {
+            let config = configuration::ephemeral();
+
             let mut http_stats_event_sender_mock = MockHttpStatsEventSender::new();
             http_stats_event_sender_mock
                 .expect_send_event()
@@ -265,17 +271,35 @@ mod tests {
             let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
-            let scrape_handler = initialize_scrape_handler();
+            let scrape_handler = initialize_scrape_handler_with_config(&config);
 
             let peer_ip = IpAddr::V4(Ipv4Addr::new(126, 0, 0, 1));
 
-            invoke(&scrape_handler, &http_stats_event_sender, &sample_info_hashes(), &peer_ip)
-                .await
-                .unwrap();
+            let scrape_request = Scrape {
+                info_hashes: sample_info_hashes(),
+            };
+
+            let client_ip_sources = ClientIpSources {
+                right_most_x_forwarded_for: None,
+                connection_info_ip: Some(peer_ip),
+            };
+
+            handle_scrape(
+                &Arc::new(config.core),
+                &scrape_handler,
+                &http_stats_event_sender,
+                &scrape_request,
+                &client_ip_sources,
+                false,
+            )
+            .await
+            .unwrap();
         }
 
         #[tokio::test]
         async fn it_should_send_the_tcp_6_scrape_event_when_the_peer_uses_ipv6() {
+            let config = configuration::ephemeral();
+
             let mut http_stats_event_sender_mock = MockHttpStatsEventSender::new();
             http_stats_event_sender_mock
                 .expect_send_event()
@@ -285,13 +309,29 @@ mod tests {
             let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
-            let scrape_handler = initialize_scrape_handler();
+            let scrape_handler = initialize_scrape_handler_with_config(&config);
 
             let peer_ip = IpAddr::V6(Ipv6Addr::new(0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969));
 
-            invoke(&scrape_handler, &http_stats_event_sender, &sample_info_hashes(), &peer_ip)
-                .await
-                .unwrap();
+            let scrape_request = Scrape {
+                info_hashes: sample_info_hashes(),
+            };
+
+            let client_ip_sources = ClientIpSources {
+                right_most_x_forwarded_for: None,
+                connection_info_ip: Some(peer_ip),
+            };
+
+            handle_scrape(
+                &Arc::new(config.core),
+                &scrape_handler,
+                &http_stats_event_sender,
+                &scrape_request,
+                &client_ip_sources,
+                false,
+            )
+            .await
+            .unwrap();
         }
     }
 

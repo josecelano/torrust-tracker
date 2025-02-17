@@ -123,26 +123,25 @@ async fn handle_scrape(
     // todo: move authentication inside `http_tracker_core::services::scrape::handle_scrape`
 
     // Authentication
-    let return_real_scrape_data = if core_config.private {
+    let return_fake_scrape_data = if core_config.private {
         match maybe_key {
             Some(key) => match authentication_service.authenticate(&key).await {
-                Ok(()) => true,
-                Err(_error) => false,
+                Ok(()) => false,
+                Err(_error) => true,
             },
-            None => false,
+            None => true,
         }
     } else {
-        true
+        false
     };
 
     http_tracker_core::services::scrape::handle_scrape(
         core_config,
         scrape_handler,
-        authentication_service,
         opt_http_stats_event_sender,
         scrape_request,
         client_ip_sources,
-        return_real_scrape_data,
+        return_fake_scrape_data,
     )
     .await
 }
