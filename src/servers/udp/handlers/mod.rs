@@ -196,7 +196,7 @@ pub(crate) mod tests {
     use tokio::sync::mpsc::error::SendError;
     use torrust_tracker_clock::clock::Time;
     use torrust_tracker_configuration::{Configuration, Core};
-    use torrust_tracker_primitives::peer;
+    use torrust_tracker_primitives::{peer, DurationSinceUnixEpoch};
     use torrust_tracker_test_helpers::configuration;
 
     use super::gen_remote_fingerprint;
@@ -242,6 +242,7 @@ pub(crate) mod tests {
         let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
         let announce_handler = Arc::new(AnnounceHandler::new(
             &config.core,
+            &whitelist_authorization,
             &in_memory_torrent_repository,
             &db_torrent_repository,
         ));
@@ -326,6 +327,12 @@ pub(crate) mod tests {
         #[must_use]
         pub fn with_number_of_bytes_left(mut self, left: i64) -> Self {
             self.peer.left = NumberOfBytes::new(left);
+            self
+        }
+
+        #[must_use]
+        pub fn updated_on(mut self, updated: DurationSinceUnixEpoch) -> Self {
+            self.peer.updated = updated;
             self
         }
 

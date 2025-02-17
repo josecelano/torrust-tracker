@@ -260,6 +260,7 @@ mod tests {
         let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
         let announce_handler = Arc::new(AnnounceHandler::new(
             &config.core,
+            &whitelist_authorization,
             &in_memory_torrent_repository,
             &db_torrent_repository,
         ));
@@ -397,7 +398,7 @@ mod tests {
             assert_error_response(
                 &response,
                 &format!(
-                    "Tracker error: The torrent: {}, is not whitelisted",
+                    "Tracker whitelist error: The torrent: {}, is not whitelisted",
                     announce_request.info_hash
                 ),
             );

@@ -43,6 +43,7 @@ bittorrent-http-protocol = { version = "3.0.0-develop", path = "packages/http-pr
 bittorrent-primitives = "0.1.0"
 bittorrent-tracker-client = { version = "3.0.0-develop", path = "packages/tracker-client" }
 bittorrent-tracker-core = { version = "3.0.0-develop", path = "packages/tracker-core" }
+bittorrent-udp-protocol = { version = "3.0.0-develop", path = "packages/udp-protocol" }
 bloom = "0.3.2"
 blowfish = "0"
 camino = { version = "1", features = ["serde", "serde1"] }

@@ -183,6 +183,17 @@ impl fmt::Display for Event {
     }
 }
 
+impl From<aquatic_udp_protocol::request::AnnounceEvent> for Event {
+    fn from(value: aquatic_udp_protocol::request::AnnounceEvent) -> Self {
+        match value {
+            AnnounceEvent::Started => Self::Started,
+            AnnounceEvent::Stopped => Self::Stopped,
+            AnnounceEvent::Completed => Self::Completed,
+            AnnounceEvent::None => panic!("can't convert announce event from aquatic for None variant"),
+        }
+    }
+}
+
 /// Whether the `announce` response should be in compact mode or not.
 ///
 /// Depending on the value of this param, the tracker will return a different

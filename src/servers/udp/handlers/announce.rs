@@ -261,6 +261,7 @@ mod tests {
                 let expected_peer = TorrentPeerBuilder::new()
                     .with_peer_id(peer_id)
                     .with_peer_address(SocketAddr::new(IpAddr::V4(client_ip), client_port))
+                    .updated_on(peers[0].updated)
                     .into();
 
                 assert_eq!(peers[0], Arc::new(expected_peer));
@@ -495,6 +496,7 @@ mod tests {
                     let expected_peer = TorrentPeerBuilder::new()
                         .with_peer_id(peer_id)
                         .with_peer_address(SocketAddr::new(external_ip_in_tracker_configuration, client_port))
+                        .updated_on(peers[0].updated)
                         .into();
 
                     assert_eq!(peers[0], Arc::new(expected_peer));
@@ -567,6 +569,7 @@ mod tests {
                 let expected_peer = TorrentPeerBuilder::new()
                     .with_peer_id(peer_id)
                     .with_peer_address(SocketAddr::new(IpAddr::V6(client_ip_v6), client_port))
+                    .updated_on(peers[0].updated)
                     .into();
 
                 assert_eq!(peers[0], Arc::new(expected_peer));
@@ -802,6 +805,7 @@ mod tests {
 
                     let announce_handler = Arc::new(AnnounceHandler::new(
                         &config.core,
+                        &whitelist_authorization,
                         &in_memory_torrent_repository,
                         &db_torrent_repository,
                     ));

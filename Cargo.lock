@@ -635,6 +635,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bittorrent-udp-protocol"
+version = "3.0.0-develop"
+dependencies = [
+ "aquatic_udp_protocol",
+ "torrust-tracker-clock",
+ "torrust-tracker-primitives",
+]
+
+[[package]]
 name = "bitvec"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4301,6 +4310,7 @@ dependencies = [
  "bittorrent-primitives",
  "bittorrent-tracker-client",
  "bittorrent-tracker-core",
+ "bittorrent-udp-protocol",
  "bloom",
  "blowfish",
  "camino",

@@ -12,34 +12,27 @@ use std::sync::Arc;
 
 use aquatic_udp_protocol::ScrapeRequest;
 use bittorrent_primitives::info_hash::InfoHash;
+use bittorrent_tracker_core::error::ScrapeError;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use torrust_tracker_primitives::core::ScrapeData;
 
 use crate::packages::udp_tracker_core;
 
 /// It handles the `Scrape` request.
+///
+/// # Errors
+///
+/// It will return an error if the tracker core scrape handler returns an error.
 pub async fn handle_scrape(
     remote_addr: SocketAddr,
     request: &ScrapeRequest,
     scrape_handler: &Arc<ScrapeHandler>,
     opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
-) -> ScrapeData {
+) -> Result<ScrapeData, ScrapeError> {
     // Convert from aquatic infohashes
-    let mut info_hashes: Vec<InfoHash> = vec![];
-    for info_hash in &request.info_hashes {
-        info_hashes.push((*info_hash).into());
-    }
+    let info_hashes: Vec<InfoHash> = request.info_hashes.iter().map(|&x| x.into()).collect();
 
-    invoke(scrape_handler, opt_udp_stats_event_sender, &info_hashes, remote_addr).await
-}
-
-pub async fn invoke(
-    scrape_handler: &Arc<ScrapeHandler>,
-    opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
-    info_hashes: &Vec<InfoHash>,
-    remote_addr: SocketAddr,
-) -> ScrapeData {
-    let scrape_data = scrape_handler.scrape(info_hashes).await;
+    let scrape_data = scrape_handler.scrape(&info_hashes).await?;
 
     if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
         match remote_addr {
@@ -56,5 +49,5 @@ pub async fn invoke(
         }
     }
 
-    scrape_data
+    Ok(scrape_data)
 }
