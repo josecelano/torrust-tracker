@@ -129,6 +129,7 @@ pub fn initialize_app_container(configuration: &Configuration) -> AppContainer {
 
     let announce_handler = Arc::new(AnnounceHandler::new(
         &configuration.core,
+        &whitelist_authorization,
         &in_memory_torrent_repository,
         &db_torrent_repository,
     ));

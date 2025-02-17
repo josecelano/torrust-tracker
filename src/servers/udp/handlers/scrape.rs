@@ -45,7 +45,12 @@ pub async fn handle_scrape(
     .map_err(|e| (e, request.transaction_id))?;
 
     let scrape_data =
-        udp_tracker_core::services::scrape::handle_scrape(remote_addr, request, scrape_handler, opt_udp_stats_event_sender).await;
+        udp_tracker_core::services::scrape::handle_scrape(remote_addr, request, scrape_handler, opt_udp_stats_event_sender)
+            .await
+            .map_err(|e| Error::TrackerError {
+                source: (Arc::new(e) as Arc<dyn std::error::Error + Send + Sync>).into(),
+            })
+            .map_err(|e| (e, request.transaction_id))?;
 
     // todo: extract `build_response` function.
 

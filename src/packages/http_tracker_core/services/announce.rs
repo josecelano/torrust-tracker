@@ -16,6 +16,7 @@ use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSou
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
+use bittorrent_tracker_core::error::AnnounceError;
 use bittorrent_tracker_core::whitelist;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::AnnounceData;
@@ -75,22 +76,28 @@ pub async fn handle_announce(
         &mut peer,
         &peers_wanted,
     )
-    .await;
+    .await
+    .map_err(responses::error::Error::from)?;
 
     Ok(announce_data)
 }
 
+/// # Errors
+///
+/// This function will return an error if the announce requests failed.
 pub async fn invoke(
     announce_handler: Arc<AnnounceHandler>,
     opt_http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
     info_hash: InfoHash,
     peer: &mut peer::Peer,
     peers_wanted: &PeersWanted,
-) -> AnnounceData {
+) -> Result<AnnounceData, AnnounceError> {
     let original_peer_ip = peer.peer_addr.ip();
 
     // The tracker could change the original peer ip
-    let announce_data = announce_handler.announce(&info_hash, peer, &original_peer_ip, peers_wanted);
+    let announce_data = announce_handler
+        .announce(&info_hash, peer, &original_peer_ip, peers_wanted)
+        .await?;
 
     if let Some(http_stats_event_sender) = opt_http_stats_event_sender.as_deref() {
         match original_peer_ip {
@@ -107,7 +114,7 @@ pub async fn invoke(
         }
     }
 
-    announce_data
+    Ok(announce_data)
 }
 
 #[cfg(test)]
@@ -120,6 +127,8 @@ mod tests {
     use bittorrent_tracker_core::databases::setup::initialize_database;
     use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
     use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentTorrentRepository;
+    use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
+    use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
     use torrust_tracker_configuration::Core;
     use torrust_tracker_primitives::{peer, DurationSinceUnixEpoch};
     use torrust_tracker_test_helpers::configuration;
@@ -140,9 +149,12 @@ mod tests {
         let database = initialize_database(&config.core);
         let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
         let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
+        let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
+        let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&config.core, &in_memory_whitelist.clone()));
 
         let announce_handler = Arc::new(AnnounceHandler::new(
             &config.core,
+            &whitelist_authorization,
             &in_memory_torrent_repository,
             &db_torrent_repository,
         ));
@@ -209,6 +221,8 @@ mod tests {
         use bittorrent_tracker_core::databases::setup::initialize_database;
         use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
         use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentTorrentRepository;
+        use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
+        use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
         use mockall::predicate::eq;
         use torrust_tracker_primitives::core::AnnounceData;
         use torrust_tracker_primitives::peer;
@@ -229,9 +243,12 @@ mod tests {
             let database = initialize_database(&config.core);
             let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
             let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
+            let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
+            let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&config.core, &in_memory_whitelist.clone()));
 
             Arc::new(AnnounceHandler::new(
                 &config.core,
+                &whitelist_authorization,
                 &in_memory_torrent_repository,
                 &db_torrent_repository,
             ))
@@ -250,7 +267,8 @@ mod tests {
                 &mut peer,
                 &PeersWanted::AsManyAsPossible,
             )
-            .await;
+            .await
+            .unwrap();
 
             let expected_announce_data = AnnounceData {
                 peers: vec![],
@@ -287,7 +305,8 @@ mod tests {
                 &mut peer,
                 &PeersWanted::AsManyAsPossible,
             )
-            .await;
+            .await
+            .unwrap();
         }
 
         fn tracker_with_an_ipv6_external_ip() -> Arc<AnnounceHandler> {
@@ -332,7 +351,8 @@ mod tests {
                 &mut peer,
                 &PeersWanted::AsManyAsPossible,
             )
-            .await;
+            .await
+            .unwrap();
         }
 
         #[tokio::test]
@@ -358,7 +378,8 @@ mod tests {
                 &mut peer,
                 &PeersWanted::AsManyAsPossible,
             )
-            .await;
+            .await
+            .unwrap();
         }
     }
 }

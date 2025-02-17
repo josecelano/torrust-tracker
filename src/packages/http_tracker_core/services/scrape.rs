@@ -15,6 +15,7 @@ use bittorrent_http_protocol::v1::responses;
 use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
+use bittorrent_tracker_core::error::ScrapeError;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
@@ -56,29 +57,34 @@ pub async fn handle_scrape(
     };
 
     if return_real_scrape_data {
-        Ok(invoke(
+        let scrape_data = invoke(
             scrape_handler,
             opt_http_stats_event_sender,
             &scrape_request.info_hashes,
             &peer_ip,
         )
-        .await)
+        .await?;
+
+        Ok(scrape_data)
     } else {
         Ok(http_tracker_core::services::scrape::fake(opt_http_stats_event_sender, &scrape_request.info_hashes, &peer_ip).await)
     }
 }
 
+/// # Errors
+///
+/// This function will return an error if the tracker core scrape handler fails.
 pub async fn invoke(
     scrape_handler: &Arc<ScrapeHandler>,
     opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
     info_hashes: &Vec<InfoHash>,
     original_peer_ip: &IpAddr,
-) -> ScrapeData {
-    let scrape_data = scrape_handler.scrape(info_hashes).await;
+) -> Result<ScrapeData, ScrapeError> {
+    let scrape_data = scrape_handler.scrape(info_hashes).await?;
 
     send_scrape_event(original_peer_ip, opt_http_stats_event_sender).await;
 
-    scrape_data
+    Ok(scrape_data)
 }
 
 /// The HTTP tracker fake `scrape` service. It returns zeroed stats.
@@ -151,6 +157,7 @@ mod tests {
         let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
         let announce_handler = Arc::new(AnnounceHandler::new(
             &config.core,
+            &whitelist_authorization,
             &in_memory_torrent_repository,
             &db_torrent_repository,
         ));
@@ -225,9 +232,14 @@ mod tests {
             // Announce a new peer to force scrape data to contain not zeroed data
             let mut peer = sample_peer();
             let original_peer_ip = peer.ip();
-            announce_handler.announce(&info_hash, &mut peer, &original_peer_ip, &PeersWanted::AsManyAsPossible);
+            announce_handler
+                .announce(&info_hash, &mut peer, &original_peer_ip, &PeersWanted::AsManyAsPossible)
+                .await
+                .unwrap();
 
-            let scrape_data = invoke(&scrape_handler, &http_stats_event_sender, &info_hashes, &original_peer_ip).await;
+            let scrape_data = invoke(&scrape_handler, &http_stats_event_sender, &info_hashes, &original_peer_ip)
+                .await
+                .unwrap();
 
             let mut expected_scrape_data = ScrapeData::empty();
             expected_scrape_data.add_file(
@@ -257,7 +269,9 @@ mod tests {
 
             let peer_ip = IpAddr::V4(Ipv4Addr::new(126, 0, 0, 1));
 
-            invoke(&scrape_handler, &http_stats_event_sender, &sample_info_hashes(), &peer_ip).await;
+            invoke(&scrape_handler, &http_stats_event_sender, &sample_info_hashes(), &peer_ip)
+                .await
+                .unwrap();
         }
 
         #[tokio::test]
@@ -275,7 +289,9 @@ mod tests {
 
             let peer_ip = IpAddr::V6(Ipv6Addr::new(0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969));
 
-            invoke(&scrape_handler, &http_stats_event_sender, &sample_info_hashes(), &peer_ip).await;
+            invoke(&scrape_handler, &http_stats_event_sender, &sample_info_hashes(), &peer_ip)
+                .await
+                .unwrap();
         }
     }
 
@@ -310,7 +326,10 @@ mod tests {
             // Announce a new peer to force scrape data to contain not zeroed data
             let mut peer = sample_peer();
             let original_peer_ip = peer.ip();
-            announce_handler.announce(&info_hash, &mut peer, &original_peer_ip, &PeersWanted::AsManyAsPossible);
+            announce_handler
+                .announce(&info_hash, &mut peer, &original_peer_ip, &PeersWanted::AsManyAsPossible)
+                .await
+                .unwrap();
 
             let scrape_data = fake(&http_stats_event_sender, &info_hashes, &original_peer_ip).await;
 

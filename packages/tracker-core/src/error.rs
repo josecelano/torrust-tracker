@@ -15,6 +15,22 @@ use torrust_tracker_located_error::LocatedError;
 use super::authentication::key::ParseKeyError;
 use super::databases;
 
+/// Errors related to announce requests.
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum AnnounceError {
+    /// Wraps errors related to torrent whitelisting.
+    #[error("Whitelist error: {0}")]
+    Whitelist(#[from] WhitelistError),
+}
+
+/// Errors related to scrape requests.
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum ScrapeError {
+    /// Wraps errors related to torrent whitelisting.
+    #[error("Whitelist error: {0}")]
+    Whitelist(#[from] WhitelistError),
+}
+
 /// Errors related to torrent whitelisting.
 ///
 /// This error is returned when an operation involves a torrent that is not

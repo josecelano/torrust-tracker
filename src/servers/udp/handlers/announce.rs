@@ -802,6 +802,7 @@ mod tests {
 
                     let announce_handler = Arc::new(AnnounceHandler::new(
                         &config.core,
+                        &whitelist_authorization,
                         &in_memory_torrent_repository,
                         &db_torrent_repository,
                     ));

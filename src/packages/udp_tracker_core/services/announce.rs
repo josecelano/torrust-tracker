@@ -13,7 +13,7 @@ use std::sync::Arc;
 use aquatic_udp_protocol::AnnounceRequest;
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
-use bittorrent_tracker_core::error::WhitelistError;
+use bittorrent_tracker_core::error::AnnounceError;
 use bittorrent_tracker_core::whitelist;
 use torrust_tracker_primitives::core::AnnounceData;
 use torrust_tracker_primitives::peer;
@@ -35,7 +35,7 @@ pub async fn handle_announce(
     announce_handler: &Arc<AnnounceHandler>,
     whitelist_authorization: &Arc<whitelist::authorization::WhitelistAuthorization>,
     opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
-) -> Result<AnnounceData, WhitelistError> {
+) -> Result<AnnounceData, AnnounceError> {
     let info_hash = request.info_hash.into();
     let remote_client_ip = remote_addr.ip();
 
@@ -52,22 +52,27 @@ pub async fn handle_announce(
         &mut peer,
         &peers_wanted,
     )
-    .await;
+    .await?;
 
     Ok(announce_data)
 }
 
+/// # Errors
+///
+/// It will return an error if the announce request fails.
 pub async fn invoke(
     announce_handler: Arc<AnnounceHandler>,
     opt_udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
     info_hash: InfoHash,
     peer: &mut peer::Peer,
     peers_wanted: &PeersWanted,
-) -> AnnounceData {
+) -> Result<AnnounceData, AnnounceError> {
     let original_peer_ip = peer.peer_addr.ip();
 
     // The tracker could change the original peer ip
-    let announce_data = announce_handler.announce(&info_hash, peer, &original_peer_ip, peers_wanted);
+    let announce_data = announce_handler
+        .announce(&info_hash, peer, &original_peer_ip, peers_wanted)
+        .await?;
 
     if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
         match original_peer_ip {
@@ -84,5 +89,5 @@ pub async fn invoke(
         }
     }
 
-    announce_data
+    Ok(announce_data)
 }

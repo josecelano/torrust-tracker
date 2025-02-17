@@ -55,10 +55,26 @@ impl From<PeerIpResolutionError> for Error {
     }
 }
 
+impl From<bittorrent_tracker_core::error::AnnounceError> for Error {
+    fn from(err: bittorrent_tracker_core::error::AnnounceError) -> Self {
+        Error {
+            failure_reason: format!("Tracker announce error: {err}"),
+        }
+    }
+}
+
+impl From<bittorrent_tracker_core::error::ScrapeError> for Error {
+    fn from(err: bittorrent_tracker_core::error::ScrapeError) -> Self {
+        Error {
+            failure_reason: format!("Tracker scrape error: {err}"),
+        }
+    }
+}
+
 impl From<bittorrent_tracker_core::error::WhitelistError> for Error {
     fn from(err: bittorrent_tracker_core::error::WhitelistError) -> Self {
         Error {
-            failure_reason: format!("Tracker error: {err}"),
+            failure_reason: format!("Tracker whitelist error: {err}"),
         }
     }
 }
