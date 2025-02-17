@@ -35,19 +35,7 @@ pub async fn handle_scrape(
         info_hashes.push((*info_hash).into());
     }
 
-    invoke(scrape_handler, opt_udp_stats_event_sender, &info_hashes, remote_addr).await
-}
-
-/// # Errors
-///
-/// It will return an error if the tracker core scrape handler returns an error.
-pub async fn invoke(
-    scrape_handler: &Arc<ScrapeHandler>,
-    opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
-    info_hashes: &Vec<InfoHash>,
-    remote_addr: SocketAddr,
-) -> Result<ScrapeData, ScrapeError> {
-    let scrape_data = scrape_handler.scrape(info_hashes).await?;
+    let scrape_data = scrape_handler.scrape(&info_hashes).await?;
 
     if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
         match remote_addr {
