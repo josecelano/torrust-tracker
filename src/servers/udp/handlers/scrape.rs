@@ -11,7 +11,7 @@ use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
 use crate::packages::udp_tracker_core;
-use crate::servers::udp::connection_cookie::check;
+use crate::packages::udp_tracker_core::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
 
@@ -94,7 +94,7 @@ mod tests {
         use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
 
         use crate::packages;
-        use crate::servers::udp::connection_cookie::make;
+        use crate::packages::udp_tracker_core::connection_cookie::make;
         use crate::servers::udp::handlers::tests::{
             initialize_core_tracker_services_for_public_tracker, sample_cookie_valid_range, sample_ipv4_remote_addr,
             sample_issue_time, TorrentPeerBuilder,

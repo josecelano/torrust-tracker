@@ -14,8 +14,8 @@ use torrust_tracker_configuration::Core;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
+use crate::packages::udp_tracker_core::connection_cookie::check;
 use crate::packages::udp_tracker_core::{self};
-use crate::servers::udp::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
 
@@ -134,7 +134,7 @@ mod tests {
             PeerId as AquaticPeerId, PeerKey, Port, TransactionId,
         };
 
-        use crate::servers::udp::connection_cookie::make;
+        use crate::packages::udp_tracker_core::connection_cookie::make;
         use crate::servers::udp::handlers::tests::{sample_ipv4_remote_addr_fingerprint, sample_issue_time};
 
         struct AnnounceRequestBuilder {
@@ -213,8 +213,8 @@ mod tests {
             use mockall::predicate::eq;
             use torrust_tracker_configuration::Core;
 
+            use crate::packages::udp_tracker_core::connection_cookie::make;
             use crate::packages::{self, udp_tracker_core};
-            use crate::servers::udp::connection_cookie::make;
             use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
             use crate::servers::udp::handlers::tests::{
                 initialize_core_tracker_services_for_default_tracker_configuration,
@@ -447,7 +447,7 @@ mod tests {
 
                 use aquatic_udp_protocol::{InfoHash as AquaticInfoHash, PeerId as AquaticPeerId};
 
-                use crate::servers::udp::connection_cookie::make;
+                use crate::packages::udp_tracker_core::connection_cookie::make;
                 use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
                 use crate::servers::udp::handlers::tests::{
                     initialize_core_tracker_services_for_public_tracker, sample_cookie_valid_range, sample_issue_time,
@@ -520,8 +520,8 @@ mod tests {
             use mockall::predicate::eq;
             use torrust_tracker_configuration::Core;
 
+            use crate::packages::udp_tracker_core::connection_cookie::make;
             use crate::packages::{self, udp_tracker_core};
-            use crate::servers::udp::connection_cookie::make;
             use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
             use crate::servers::udp::handlers::tests::{
                 initialize_core_tracker_services_for_default_tracker_configuration,
@@ -776,7 +776,7 @@ mod tests {
                 use mockall::predicate::eq;
 
                 use crate::packages::udp_tracker_core;
-                use crate::servers::udp::connection_cookie::make;
+                use crate::packages::udp_tracker_core::connection_cookie::make;
                 use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
                 use crate::servers::udp::handlers::tests::{
                     sample_cookie_valid_range, sample_issue_time, MockUdpStatsEventSender, TrackerConfigurationBuilder,

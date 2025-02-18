@@ -637,7 +637,6 @@
 
 use std::net::SocketAddr;
 
-pub mod connection_cookie;
 pub mod error;
 pub mod handlers;
 pub mod server;

@@ -6,7 +6,7 @@ use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, Response};
 use tracing::{instrument, Level};
 
 use crate::packages::udp_tracker_core;
-use crate::servers::udp::connection_cookie::make;
+use crate::packages::udp_tracker_core::connection_cookie::make;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
 
 /// It handles the `Connect` request. Refer to [`Connect`](crate::servers::udp#connect)
@@ -62,8 +62,8 @@ mod tests {
         use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, Response, TransactionId};
         use mockall::predicate::eq;
 
+        use crate::packages::udp_tracker_core::connection_cookie::make;
         use crate::packages::{self, udp_tracker_core};
-        use crate::servers::udp::connection_cookie::make;
         use crate::servers::udp::handlers::handle_connect;
         use crate::servers::udp::handlers::tests::{
             sample_ipv4_remote_addr, sample_ipv4_remote_addr_fingerprint, sample_ipv4_socket_address, sample_ipv6_remote_addr,

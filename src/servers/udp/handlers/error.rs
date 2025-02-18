@@ -9,7 +9,7 @@ use uuid::Uuid;
 use zerocopy::network_endian::I32;
 
 use crate::packages::udp_tracker_core;
-use crate::servers::udp::connection_cookie::check;
+use crate::packages::udp_tracker_core::connection_cookie::check;
 use crate::servers::udp::error::Error;
 use crate::servers::udp::handlers::gen_remote_fingerprint;
 use crate::servers::udp::UDP_TRACKER_LOG_TARGET;
