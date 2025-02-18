@@ -117,11 +117,6 @@ fn custom_error(rejection: &PathRejection) -> responses::error::Error {
                 location: Location::caller(),
             })
         }
-        axum::extract::rejection::PathRejection::MissingPathParams(_) => {
-            responses::error::Error::from(auth::Error::MissingAuthKey {
-                location: Location::caller(),
-            })
-        }
         _ => responses::error::Error::from(auth::Error::CannotExtractKeyParam {
             location: Location::caller(),
         }),
@@ -148,6 +143,9 @@ mod tests {
 
         let response = parse_key(invalid_key).unwrap_err();
 
-        assert_error_response(&response, "Authentication error: Invalid format for authentication key param");
+        assert_error_response(
+            &response,
+            "Tracker authentication error: Invalid format for authentication key param",
+        );
     }
 }

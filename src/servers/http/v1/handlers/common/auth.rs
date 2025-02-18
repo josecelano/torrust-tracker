@@ -14,10 +14,9 @@ use thiserror::Error;
 /// from the URL path.
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Missing authentication key param for private tracker. Error in {location}")]
-    MissingAuthKey { location: &'static Location<'static> },
     #[error("Invalid format for authentication key param. Error in {location}")]
     InvalidKeyFormat { location: &'static Location<'static> },
+
     #[error("Cannot extract authentication key param from URL path. Error in {location}")]
     CannotExtractKeyParam { location: &'static Location<'static> },
 }
@@ -25,7 +24,7 @@ pub enum Error {
 impl From<Error> for responses::error::Error {
     fn from(err: Error) -> Self {
         responses::error::Error {
-            failure_reason: format!("Authentication error: {err}"),
+            failure_reason: format!("Tracker authentication error: {err}"),
         }
     }
 }
@@ -36,6 +35,6 @@ pub fn map_auth_error_to_error_response(err: &authentication::Error) -> response
     // impl From<authentication::Error> for responses::error::Error
     // Consider moving the trait implementation to the http-protocol package.
     responses::error::Error {
-        failure_reason: format!("Authentication error: {err}"),
+        failure_reason: format!("Tracker authentication error: {err}"),
     }
 }

@@ -79,6 +79,14 @@ impl From<bittorrent_tracker_core::error::WhitelistError> for Error {
     }
 }
 
+impl From<bittorrent_tracker_core::authentication::Error> for Error {
+    fn from(err: bittorrent_tracker_core::authentication::Error) -> Self {
+        Error {
+            failure_reason: format!("Tracker authentication error: {err}"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 

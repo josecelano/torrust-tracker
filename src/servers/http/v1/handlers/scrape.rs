@@ -107,6 +107,7 @@ async fn handle(
         Ok(scrape_data) => scrape_data,
         Err(error) => return (StatusCode::OK, error.write()).into_response(),
     };
+
     build_response(scrape_data)
 }
 
@@ -120,28 +121,14 @@ async fn handle_scrape(
     client_ip_sources: &ClientIpSources,
     maybe_key: Option<Key>,
 ) -> Result<ScrapeData, responses::error::Error> {
-    // todo: move authentication inside `http_tracker_core::services::scrape::handle_scrape`
-
-    // Authentication
-    let return_fake_scrape_data = if core_config.private {
-        match maybe_key {
-            Some(key) => match authentication_service.authenticate(&key).await {
-                Ok(()) => false,
-                Err(_error) => true,
-            },
-            None => true,
-        }
-    } else {
-        false
-    };
-
     http_tracker_core::services::scrape::handle_scrape(
         core_config,
         scrape_handler,
+        authentication_service,
         opt_http_stats_event_sender,
         scrape_request,
         client_ip_sources,
-        return_fake_scrape_data,
+        maybe_key,
     )
     .await
 }

@@ -5,7 +5,6 @@
 //!
 //! The handlers perform the authentication and authorization of the request,
 //! and resolve the client IP address.
-use std::panic::Location;
 use std::sync::Arc;
 
 use aquatic_udp_protocol::AnnounceEvent;
@@ -22,12 +21,10 @@ use hyper::StatusCode;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::AnnounceData;
 
-use super::common::auth::map_auth_error_to_error_response;
 use crate::packages::http_tracker_core;
 use crate::servers::http::v1::extractors::announce_request::ExtractRequest;
 use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
 use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
-use crate::servers::http::v1::handlers::common::auth;
 
 /// It handles the `announce` request when the HTTP tracker does not require
 /// authentication (no PATH `key` parameter required).
@@ -134,23 +131,6 @@ async fn handle_announce(
     client_ip_sources: &ClientIpSources,
     maybe_key: Option<Key>,
 ) -> Result<AnnounceData, responses::error::Error> {
-    // todo: move authentication inside `http_tracker_core::services::announce::handle_announce`
-
-    // Authentication
-    if core_config.private {
-        match maybe_key {
-            Some(key) => match authentication_service.authenticate(&key).await {
-                Ok(()) => (),
-                Err(error) => return Err(map_auth_error_to_error_response(&error)),
-            },
-            None => {
-                return Err(responses::error::Error::from(auth::Error::MissingAuthKey {
-                    location: Location::caller(),
-                }))
-            }
-        }
-    }
-
     http_tracker_core::services::announce::handle_announce(
         &core_config.clone(),
         &announce_handler.clone(),
@@ -159,6 +139,7 @@ async fn handle_announce(
         &opt_http_stats_event_sender.clone(),
         announce_request,
         client_ip_sources,
+        maybe_key,
     )
     .await
 }
@@ -339,10 +320,7 @@ mod tests {
             .await
             .unwrap_err();
 
-            assert_error_response(
-                &response,
-                "Authentication error: Missing authentication key param for private tracker",
-            );
+            assert_error_response(&response, "Tracker authentication error: Missing authentication key");
         }
 
         #[tokio::test]
@@ -366,7 +344,10 @@ mod tests {
             .await
             .unwrap_err();
 
-            assert_error_response(&response, "Authentication error: Failed to read key");
+            assert_error_response(
+                &response,
+                "Tracker authentication error: Failed to read key: YZSl4lMZupRuOpSRC3krIKR5BPB14nrJ",
+            );
         }
     }
 

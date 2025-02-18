@@ -14,6 +14,8 @@ use bittorrent_http_protocol::v1::requests::scrape::Scrape;
 use bittorrent_http_protocol::v1::responses;
 use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_primitives::info_hash::InfoHash;
+use bittorrent_tracker_core::authentication::service::AuthenticationService;
+use bittorrent_tracker_core::authentication::Key;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
@@ -40,12 +42,26 @@ use crate::packages::http_tracker_core;
 pub async fn handle_scrape(
     core_config: &Arc<Core>,
     scrape_handler: &Arc<ScrapeHandler>,
+    authentication_service: &Arc<AuthenticationService>,
     opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
     scrape_request: &Scrape,
     client_ip_sources: &ClientIpSources,
-    return_fake_scrape_data: bool,
+    maybe_key: Option<Key>,
 ) -> Result<ScrapeData, responses::error::Error> {
-    // Authorization for scrape requests is handled at the `bittorrent-_racker_core`
+    // Authentication
+    let return_fake_scrape_data = if core_config.private {
+        match maybe_key {
+            Some(key) => match authentication_service.authenticate(&key).await {
+                Ok(()) => false,
+                Err(_error) => true,
+            },
+            None => true,
+        }
+    } else {
+        false
+    };
+
+    // Authorization for scrape requests is handled at the `bittorrent_tracker_core`
     // level for each torrent.
 
     let peer_ip = match peer_ip_resolver::invoke(core_config.net.on_reverse_proxy, client_ip_sources) {
@@ -111,6 +127,8 @@ mod tests {
     use aquatic_udp_protocol::{AnnounceEvent, NumberOfBytes, PeerId};
     use bittorrent_primitives::info_hash::InfoHash;
     use bittorrent_tracker_core::announce_handler::AnnounceHandler;
+    use bittorrent_tracker_core::authentication::key::repository::in_memory::InMemoryKeyRepository;
+    use bittorrent_tracker_core::authentication::service::AuthenticationService;
     use bittorrent_tracker_core::databases::setup::initialize_database;
     use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
     use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
@@ -127,27 +145,39 @@ mod tests {
     use crate::packages::http_tracker_core;
     use crate::servers::http::test_helpers::tests::sample_info_hash;
 
-    fn initialize_announce_and_scrape_handlers_for_public_tracker() -> (Arc<AnnounceHandler>, Arc<ScrapeHandler>) {
-        initialize_announce_and_scrape_handlers_with_configuration(&configuration::ephemeral_public())
+    struct Container {
+        announce_handler: Arc<AnnounceHandler>,
+        scrape_handler: Arc<ScrapeHandler>,
+        authentication_service: Arc<AuthenticationService>,
     }
 
-    fn initialize_announce_and_scrape_handlers_with_configuration(
-        config: &Configuration,
-    ) -> (Arc<AnnounceHandler>, Arc<ScrapeHandler>) {
+    fn initialize_services_for_public_tracker() -> Container {
+        initialize_services_with_configuration(&configuration::ephemeral_public())
+    }
+
+    fn initialize_services_with_configuration(config: &Configuration) -> Container {
         let database = initialize_database(&config.core);
         let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
         let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&config.core, &in_memory_whitelist.clone()));
         let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
         let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
+        let in_memory_key_repository = Arc::new(InMemoryKeyRepository::default());
+        let authentication_service = Arc::new(AuthenticationService::new(&config.core, &in_memory_key_repository));
+
         let announce_handler = Arc::new(AnnounceHandler::new(
             &config.core,
             &whitelist_authorization,
             &in_memory_torrent_repository,
             &db_torrent_repository,
         ));
+
         let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
 
-        (announce_handler, scrape_handler)
+        Container {
+            announce_handler,
+            scrape_handler,
+            authentication_service,
+        }
     }
 
     fn sample_info_hashes() -> Vec<InfoHash> {
@@ -164,14 +194,6 @@ mod tests {
             left: NumberOfBytes::new(0),
             event: AnnounceEvent::Started,
         }
-    }
-
-    fn initialize_scrape_handler_with_config(config: &Configuration) -> Arc<ScrapeHandler> {
-        let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
-        let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&config.core, &in_memory_whitelist.clone()));
-        let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
-
-        Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository))
     }
 
     mock! {
@@ -197,8 +219,7 @@ mod tests {
 
         use crate::packages::http_tracker_core::services::scrape::handle_scrape;
         use crate::packages::http_tracker_core::services::scrape::tests::{
-            initialize_announce_and_scrape_handlers_with_configuration, initialize_scrape_handler_with_config,
-            sample_info_hashes, sample_peer, MockHttpStatsEventSender,
+            initialize_services_with_configuration, sample_info_hashes, sample_peer, MockHttpStatsEventSender,
         };
         use crate::packages::{self, http_tracker_core};
         use crate::servers::http::test_helpers::tests::sample_info_hash;
@@ -212,7 +233,7 @@ mod tests {
                 packages::http_tracker_core::statistics::setup::factory(false);
             let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
-            let (announce_handler, scrape_handler) = initialize_announce_and_scrape_handlers_with_configuration(&configuration);
+            let container = initialize_services_with_configuration(&configuration);
 
             let info_hash = sample_info_hash();
             let info_hashes = vec![info_hash];
@@ -220,7 +241,8 @@ mod tests {
             // Announce a new peer to force scrape data to contain non zeroed data
             let mut peer = sample_peer();
             let original_peer_ip = peer.ip();
-            announce_handler
+            container
+                .announce_handler
                 .announce(&info_hash, &mut peer, &original_peer_ip, &PeersWanted::AsManyAsPossible)
                 .await
                 .unwrap();
@@ -236,11 +258,12 @@ mod tests {
 
             let scrape_data = handle_scrape(
                 &core_config,
-                &scrape_handler,
+                &container.scrape_handler,
+                &container.authentication_service,
                 &http_stats_event_sender,
                 &scrape_request,
                 &client_ip_sources,
-                false,
+                None,
             )
             .await
             .unwrap();
@@ -271,7 +294,7 @@ mod tests {
             let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
-            let scrape_handler = initialize_scrape_handler_with_config(&config);
+            let container = initialize_services_with_configuration(&config);
 
             let peer_ip = IpAddr::V4(Ipv4Addr::new(126, 0, 0, 1));
 
@@ -286,11 +309,12 @@ mod tests {
 
             handle_scrape(
                 &Arc::new(config.core),
-                &scrape_handler,
+                &container.scrape_handler,
+                &container.authentication_service,
                 &http_stats_event_sender,
                 &scrape_request,
                 &client_ip_sources,
-                false,
+                None,
             )
             .await
             .unwrap();
@@ -309,7 +333,7 @@ mod tests {
             let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
-            let scrape_handler = initialize_scrape_handler_with_config(&config);
+            let container = initialize_services_with_configuration(&config);
 
             let peer_ip = IpAddr::V6(Ipv6Addr::new(0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969));
 
@@ -324,11 +348,12 @@ mod tests {
 
             handle_scrape(
                 &Arc::new(config.core),
-                &scrape_handler,
+                &container.scrape_handler,
+                &container.authentication_service,
                 &http_stats_event_sender,
                 &scrape_request,
                 &client_ip_sources,
-                false,
+                None,
             )
             .await
             .unwrap();
@@ -347,7 +372,7 @@ mod tests {
 
         use crate::packages::http_tracker_core::services::scrape::fake;
         use crate::packages::http_tracker_core::services::scrape::tests::{
-            initialize_announce_and_scrape_handlers_for_public_tracker, sample_info_hashes, sample_peer, MockHttpStatsEventSender,
+            initialize_services_for_public_tracker, sample_info_hashes, sample_peer, MockHttpStatsEventSender,
         };
         use crate::packages::{self, http_tracker_core};
         use crate::servers::http::test_helpers::tests::sample_info_hash;
@@ -358,7 +383,7 @@ mod tests {
                 packages::http_tracker_core::statistics::setup::factory(false);
             let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
-            let (announce_handler, _scrape_handler) = initialize_announce_and_scrape_handlers_for_public_tracker();
+            let container = initialize_services_for_public_tracker();
 
             let info_hash = sample_info_hash();
             let info_hashes = vec![info_hash];
@@ -366,7 +391,8 @@ mod tests {
             // Announce a new peer to force scrape data to contain not zeroed data
             let mut peer = sample_peer();
             let original_peer_ip = peer.ip();
-            announce_handler
+            container
+                .announce_handler
                 .announce(&info_hash, &mut peer, &original_peer_ip, &PeersWanted::AsManyAsPossible)
                 .await
                 .unwrap();

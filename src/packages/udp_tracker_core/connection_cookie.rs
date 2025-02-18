@@ -79,11 +79,24 @@
 
 use aquatic_udp_protocol::ConnectionId as Cookie;
 use cookie_builder::{assemble, decode, disassemble, encode};
+use thiserror::Error;
 use tracing::instrument;
 use zerocopy::AsBytes;
 
-use super::error::Error;
 use crate::shared::crypto::keys::CipherArrayBlowfish;
+
+/// Error returned when there was an error with the connection cookie.
+#[derive(Error, Debug, Clone)]
+pub enum ConnectionCookieError {
+    #[error("cookie value is not normal: {not_normal_value}")]
+    ValueNotNormal { not_normal_value: f64 },
+
+    #[error("cookie value is expired: {expired_value}, expected > {min_value}")]
+    ValueExpired { expired_value: f64, min_value: f64 },
+
+    #[error("cookie value is from future: {future_value}, expected < {max_value}")]
+    ValueFromFuture { future_value: f64, max_value: f64 },
+}
 
 /// Generates a new connection cookie.
 ///
@@ -96,9 +109,9 @@ use crate::shared::crypto::keys::CipherArrayBlowfish;
 /// It would panic if the cookie is not exactly 8 bytes is size.
 ///
 #[instrument(err)]
-pub fn make(fingerprint: u64, issue_at: f64) -> Result<Cookie, Error> {
+pub fn make(fingerprint: u64, issue_at: f64) -> Result<Cookie, ConnectionCookieError> {
     if !issue_at.is_normal() {
-        return Err(Error::CookieValueNotNormal {
+        return Err(ConnectionCookieError::ValueNotNormal {
             not_normal_value: issue_at,
         });
     }
@@ -110,6 +123,8 @@ pub fn make(fingerprint: u64, issue_at: f64) -> Result<Cookie, Error> {
     Ok(zerocopy::FromBytes::read_from(cookie.as_slice()).expect("it should be the same size"))
 }
 
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::net::SocketAddr;
 use std::ops::Range;
 
 /// Checks if the supplied `connection_cookie` is valid.
@@ -122,7 +137,7 @@ use std::ops::Range;
 ///
 /// It would panic if the range start is not smaller than it's end.
 #[instrument]
-pub fn check(cookie: &Cookie, fingerprint: u64, valid_range: Range<f64>) -> Result<f64, Error> {
+pub fn check(cookie: &Cookie, fingerprint: u64, valid_range: Range<f64>) -> Result<f64, ConnectionCookieError> {
     assert!(valid_range.start <= valid_range.end, "range start is larger than range end");
 
     let cookie_bytes = CipherArrayBlowfish::from_slice(cookie.0.as_bytes());
@@ -131,26 +146,33 @@ pub fn check(cookie: &Cookie, fingerprint: u64, valid_range: Range<f64>) -> Resu
     let issue_time = disassemble(fingerprint, cookie_bytes);
 
     if !issue_time.is_normal() {
-        return Err(Error::CookieValueNotNormal {
+        return Err(ConnectionCookieError::ValueNotNormal {
             not_normal_value: issue_time,
         });
     }
 
     if issue_time < valid_range.start {
-        return Err(Error::CookieValueExpired {
+        return Err(ConnectionCookieError::ValueExpired {
             expired_value: issue_time,
             min_value: valid_range.start,
         });
     }
 
     if issue_time > valid_range.end {
-        return Err(Error::CookieValueFromFuture {
+        return Err(ConnectionCookieError::ValueFromFuture {
             future_value: issue_time,
             max_value: valid_range.end,
         });
     }
 
     Ok(issue_time)
+}
+
+#[must_use]
+pub(crate) fn gen_remote_fingerprint(remote_addr: &SocketAddr) -> u64 {
+    let mut state = DefaultHasher::new();
+    remote_addr.hash(&mut state);
+    state.finish()
 }
 
 mod cookie_builder {
@@ -287,7 +309,7 @@ mod tests {
         let result = check(&cookie, fingerprint, min..max).unwrap_err();
 
         match result {
-            Error::CookieValueExpired { .. } => {} // Expected error
+            ConnectionCookieError::ValueExpired { .. } => {} // Expected error
             _ => panic!("Expected ConnectionIdExpired error"),
         }
     }
@@ -305,7 +327,7 @@ mod tests {
         let result = check(&cookie, fingerprint, min..max).unwrap_err();
 
         match result {
-            Error::CookieValueFromFuture { .. } => {} // Expected error
+            ConnectionCookieError::ValueFromFuture { .. } => {} // Expected error
             _ => panic!("Expected ConnectionIdFromFuture error"),
         }
     }
