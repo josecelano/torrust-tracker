@@ -7,8 +7,8 @@
 
 use self::detail_cipher::CURRENT_CIPHER;
 use self::detail_seed::CURRENT_SEED;
-pub use crate::shared::crypto::ephemeral_instance_keys::CipherArrayBlowfish;
-use crate::shared::crypto::ephemeral_instance_keys::{CipherBlowfish, Seed, RANDOM_CIPHER_BLOWFISH, RANDOM_SEED};
+pub use crate::crypto::ephemeral_instance_keys::CipherArrayBlowfish;
+use crate::crypto::ephemeral_instance_keys::{CipherBlowfish, Seed, RANDOM_CIPHER_BLOWFISH, RANDOM_SEED};
 
 /// This trait is for structures that can keep and provide a seed.
 pub trait Keeper {
@@ -61,7 +61,7 @@ mod tests {
 
     use super::detail_seed::ZEROED_TEST_SEED;
     use super::{Current, Instance, Keeper};
-    use crate::shared::crypto::ephemeral_instance_keys::{CipherBlowfish, Seed, ZEROED_TEST_CIPHER_BLOWFISH};
+    use crate::crypto::ephemeral_instance_keys::{CipherBlowfish, Seed, ZEROED_TEST_CIPHER_BLOWFISH};
 
     pub struct ZeroedTest;
 
@@ -91,7 +91,7 @@ mod tests {
 }
 
 mod detail_seed {
-    use crate::shared::crypto::ephemeral_instance_keys::Seed;
+    use crate::crypto::ephemeral_instance_keys::Seed;
 
     #[allow(dead_code)]
     pub const ZEROED_TEST_SEED: Seed = [0u8; 32];
@@ -100,13 +100,13 @@ mod detail_seed {
     pub use ZEROED_TEST_SEED as CURRENT_SEED;
 
     #[cfg(not(test))]
-    pub use crate::shared::crypto::ephemeral_instance_keys::RANDOM_SEED as CURRENT_SEED;
+    pub use crate::crypto::ephemeral_instance_keys::RANDOM_SEED as CURRENT_SEED;
 
     #[cfg(test)]
     mod tests {
-        use crate::shared::crypto::ephemeral_instance_keys::RANDOM_SEED;
-        use crate::shared::crypto::keys::detail_seed::ZEROED_TEST_SEED;
-        use crate::shared::crypto::keys::CURRENT_SEED;
+        use crate::crypto::ephemeral_instance_keys::RANDOM_SEED;
+        use crate::crypto::keys::detail_seed::ZEROED_TEST_SEED;
+        use crate::crypto::keys::CURRENT_SEED;
 
         #[test]
         fn it_should_have_a_zero_test_seed() {
@@ -129,16 +129,16 @@ mod detail_seed {
 mod detail_cipher {
     #[allow(unused_imports)]
     #[cfg(not(test))]
-    pub use crate::shared::crypto::ephemeral_instance_keys::RANDOM_CIPHER_BLOWFISH as CURRENT_CIPHER;
+    pub use crate::crypto::ephemeral_instance_keys::RANDOM_CIPHER_BLOWFISH as CURRENT_CIPHER;
     #[cfg(test)]
-    pub use crate::shared::crypto::ephemeral_instance_keys::ZEROED_TEST_CIPHER_BLOWFISH as CURRENT_CIPHER;
+    pub use crate::crypto::ephemeral_instance_keys::ZEROED_TEST_CIPHER_BLOWFISH as CURRENT_CIPHER;
 
     #[cfg(test)]
     mod tests {
         use cipher::BlockEncrypt;
 
-        use crate::shared::crypto::ephemeral_instance_keys::{CipherArrayBlowfish, ZEROED_TEST_CIPHER_BLOWFISH};
-        use crate::shared::crypto::keys::detail_cipher::CURRENT_CIPHER;
+        use crate::crypto::ephemeral_instance_keys::{CipherArrayBlowfish, ZEROED_TEST_CIPHER_BLOWFISH};
+        use crate::crypto::keys::detail_cipher::CURRENT_CIPHER;
 
         #[test]
         fn it_should_default_to_zeroed_seed_when_testing() {

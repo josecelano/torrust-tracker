@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bittorrent_tracker_client::udp::client::check;
+use bittorrent_udp_tracker_core::{self, statistics, UDP_TRACKER_LOG_TARGET};
 use derive_more::Constructor;
 use futures_util::StreamExt;
 use tokio::select;
@@ -13,18 +14,13 @@ use tracing::instrument;
 use super::request_buffer::ActiveRequests;
 use crate::bootstrap::jobs::Started;
 use crate::container::UdpTrackerContainer;
-use crate::packages::udp_tracker_core;
 use crate::servers::logging::STARTED_ON;
 use crate::servers::registar::ServiceHealthCheckJob;
 use crate::servers::signals::{shutdown_signal_with_message, Halted};
 use crate::servers::udp::server::bound_socket::BoundSocket;
 use crate::servers::udp::server::processor::Processor;
 use crate::servers::udp::server::receiver::Receiver;
-use crate::servers::udp::UDP_TRACKER_LOG_TARGET;
 
-/// The maximum number of connection id errors per ip. Clients will be banned if
-/// they exceed this limit.
-pub const MAX_CONNECTION_ID_ERRORS_PER_IP: u32 = 10;
 const IP_BANS_RESET_INTERVAL_IN_SECS: u64 = 3600;
 
 /// A UDP server instance launcher.
@@ -165,14 +161,10 @@ impl Launcher {
                 if let Some(udp_stats_event_sender) = udp_tracker_container.udp_stats_event_sender.as_deref() {
                     match req.from.ip() {
                         IpAddr::V4(_) => {
-                            udp_stats_event_sender
-                                .send_event(udp_tracker_core::statistics::event::Event::Udp4Request)
-                                .await;
+                            udp_stats_event_sender.send_event(statistics::event::Event::Udp4Request).await;
                         }
                         IpAddr::V6(_) => {
-                            udp_stats_event_sender
-                                .send_event(udp_tracker_core::statistics::event::Event::Udp6Request)
-                                .await;
+                            udp_stats_event_sender.send_event(statistics::event::Event::Udp6Request).await;
                         }
                     }
                 }
@@ -182,7 +174,7 @@ impl Launcher {
 
                     if let Some(udp_stats_event_sender) = udp_tracker_container.udp_stats_event_sender.as_deref() {
                         udp_stats_event_sender
-                            .send_event(udp_tracker_core::statistics::event::Event::UdpRequestBanned)
+                            .send_event(statistics::event::Event::UdpRequestBanned)
                             .await;
                     }
 
@@ -215,7 +207,7 @@ impl Launcher {
 
                     if let Some(udp_stats_event_sender) = udp_tracker_container.udp_stats_event_sender.as_deref() {
                         udp_stats_event_sender
-                            .send_event(udp_tracker_core::statistics::event::Event::UdpRequestAborted)
+                            .send_event(statistics::event::Event::UdpRequestAborted)
                             .await;
                     }
                 }

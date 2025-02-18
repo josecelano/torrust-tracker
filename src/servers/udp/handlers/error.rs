@@ -4,14 +4,13 @@ use std::ops::Range;
 use std::sync::Arc;
 
 use aquatic_udp_protocol::{ErrorResponse, RequestParseError, Response, TransactionId};
+use bittorrent_udp_tracker_core::connection_cookie::{check, gen_remote_fingerprint};
+use bittorrent_udp_tracker_core::{self, statistics, UDP_TRACKER_LOG_TARGET};
 use tracing::{instrument, Level};
 use uuid::Uuid;
 use zerocopy::network_endian::I32;
 
-use crate::packages::udp_tracker_core;
-use crate::packages::udp_tracker_core::connection_cookie::{check, gen_remote_fingerprint};
 use crate::servers::udp::error::Error;
-use crate::servers::udp::UDP_TRACKER_LOG_TARGET;
 
 #[allow(clippy::too_many_arguments)]
 #[instrument(fields(transaction_id), skip(opt_udp_stats_event_sender), ret(level = Level::TRACE))]
@@ -19,7 +18,7 @@ pub async fn handle_error(
     remote_addr: SocketAddr,
     local_addr: SocketAddr,
     request_id: Uuid,
-    opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    opt_udp_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     cookie_valid_range: Range<f64>,
     e: &Error,
     transaction_id: Option<TransactionId>,
@@ -59,14 +58,10 @@ pub async fn handle_error(
         if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
             match remote_addr {
                 SocketAddr::V4(_) => {
-                    udp_stats_event_sender
-                        .send_event(udp_tracker_core::statistics::event::Event::Udp4Error)
-                        .await;
+                    udp_stats_event_sender.send_event(statistics::event::Event::Udp4Error).await;
                 }
                 SocketAddr::V6(_) => {
-                    udp_stats_event_sender
-                        .send_event(udp_tracker_core::statistics::event::Event::Udp6Error)
-                        .await;
+                    udp_stats_event_sender.send_event(statistics::event::Event::Udp6Error).await;
                 }
             }
         }

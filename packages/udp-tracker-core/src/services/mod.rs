@@ -1,4 +1,5 @@
 pub mod announce;
+pub mod banning;
 pub mod connect;
 pub mod scrape;
 
@@ -11,8 +12,8 @@ pub(crate) mod tests {
     use mockall::mock;
     use tokio::sync::mpsc::error::SendError;
 
-    use crate::packages::udp_tracker_core;
-    use crate::packages::udp_tracker_core::connection_cookie::gen_remote_fingerprint;
+    use crate::connection_cookie::gen_remote_fingerprint;
+    use crate::statistics;
 
     pub(crate) fn sample_ipv4_remote_addr() -> SocketAddr {
         sample_ipv4_socket_address()
@@ -44,8 +45,8 @@ pub(crate) mod tests {
 
     mock! {
         pub(crate) UdpStatsEventSender {}
-        impl udp_tracker_core::statistics::event::sender::Sender for UdpStatsEventSender {
-             fn send_event(&self, event: udp_tracker_core::statistics::event::Event) -> BoxFuture<'static,Option<Result<(),SendError<udp_tracker_core::statistics::event::Event> > > > ;
+        impl statistics::event::sender::Sender for UdpStatsEventSender {
+             fn send_event(&self, event: statistics::event::Event) -> BoxFuture<'static,Option<Result<(),SendError<statistics::event::Event> > > > ;
         }
     }
 }

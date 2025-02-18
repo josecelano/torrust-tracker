@@ -3,9 +3,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, ConnectionId, Response};
+use bittorrent_udp_tracker_core::{services, statistics};
 use tracing::{instrument, Level};
-
-use crate::packages::udp_tracker_core;
 
 /// It handles the `Connect` request. Refer to [`Connect`](crate::servers::udp#connect)
 /// request for more information.
@@ -13,14 +12,13 @@ use crate::packages::udp_tracker_core;
 pub async fn handle_connect(
     remote_addr: SocketAddr,
     request: &ConnectRequest,
-    opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    opt_udp_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     cookie_issue_time: f64,
 ) -> Response {
     tracing::Span::current().record("transaction_id", request.transaction_id.0.to_string());
     tracing::trace!("handle connect");
 
-    let connection_id =
-        udp_tracker_core::services::connect::handle_connect(remote_addr, opt_udp_stats_event_sender, cookie_issue_time).await;
+    let connection_id = services::connect::handle_connect(remote_addr, opt_udp_stats_event_sender, cookie_issue_time).await;
 
     build_response(*request, connection_id)
 }
@@ -43,10 +41,10 @@ mod tests {
         use std::sync::Arc;
 
         use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, Response, TransactionId};
+        use bittorrent_udp_tracker_core::connection_cookie::make;
+        use bittorrent_udp_tracker_core::statistics;
         use mockall::predicate::eq;
 
-        use crate::packages::udp_tracker_core::connection_cookie::make;
-        use crate::packages::{self, udp_tracker_core};
         use crate::servers::udp::handlers::handle_connect;
         use crate::servers::udp::handlers::tests::{
             sample_ipv4_remote_addr, sample_ipv4_remote_addr_fingerprint, sample_ipv4_socket_address, sample_ipv6_remote_addr,
@@ -61,7 +59,7 @@ mod tests {
 
         #[tokio::test]
         async fn a_connect_response_should_contain_the_same_transaction_id_as_the_connect_request() {
-            let (udp_stats_event_sender, _udp_stats_repository) = packages::udp_tracker_core::statistics::setup::factory(false);
+            let (udp_stats_event_sender, _udp_stats_repository) = bittorrent_udp_tracker_core::statistics::setup::factory(false);
             let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
 
             let request = ConnectRequest {
@@ -87,7 +85,7 @@ mod tests {
 
         #[tokio::test]
         async fn a_connect_response_should_contain_a_new_connection_id() {
-            let (udp_stats_event_sender, _udp_stats_repository) = packages::udp_tracker_core::statistics::setup::factory(false);
+            let (udp_stats_event_sender, _udp_stats_repository) = bittorrent_udp_tracker_core::statistics::setup::factory(false);
             let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
 
             let request = ConnectRequest {
@@ -113,7 +111,7 @@ mod tests {
 
         #[tokio::test]
         async fn a_connect_response_should_contain_a_new_connection_id_ipv6() {
-            let (udp_stats_event_sender, _udp_stats_repository) = packages::udp_tracker_core::statistics::setup::factory(false);
+            let (udp_stats_event_sender, _udp_stats_repository) = bittorrent_udp_tracker_core::statistics::setup::factory(false);
             let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
 
             let request = ConnectRequest {
@@ -142,10 +140,10 @@ mod tests {
             let mut udp_stats_event_sender_mock = MockUdpStatsEventSender::new();
             udp_stats_event_sender_mock
                 .expect_send_event()
-                .with(eq(udp_tracker_core::statistics::event::Event::Udp4Connect))
+                .with(eq(statistics::event::Event::Udp4Connect))
                 .times(1)
                 .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-            let udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>> =
+            let udp_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(udp_stats_event_sender_mock)));
 
             let client_socket_address = sample_ipv4_socket_address();
@@ -164,10 +162,10 @@ mod tests {
             let mut udp_stats_event_sender_mock = MockUdpStatsEventSender::new();
             udp_stats_event_sender_mock
                 .expect_send_event()
-                .with(eq(udp_tracker_core::statistics::event::Event::Udp6Connect))
+                .with(eq(statistics::event::Event::Udp6Connect))
                 .times(1)
                 .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-            let udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>> =
+            let udp_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(udp_stats_event_sender_mock)));
 
             handle_connect(

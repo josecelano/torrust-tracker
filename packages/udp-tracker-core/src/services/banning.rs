@@ -21,7 +21,7 @@ use std::net::IpAddr;
 use bloom::{CountingBloomFilter, ASMS};
 use tokio::time::Instant;
 
-use crate::servers::udp::UDP_TRACKER_LOG_TARGET;
+use crate::UDP_TRACKER_LOG_TARGET;
 
 pub struct BanService {
     max_connection_id_errors_per_ip: u32,

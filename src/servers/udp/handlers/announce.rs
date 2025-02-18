@@ -10,12 +10,12 @@ use aquatic_udp_protocol::{
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::whitelist;
+use bittorrent_udp_tracker_core::{services, statistics};
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::AnnounceData;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
-use crate::packages::udp_tracker_core::{self};
 use crate::servers::udp::error::Error;
 
 /// It handles the `Announce` request. Refer to [`Announce`](crate::servers::udp#announce)
@@ -32,7 +32,7 @@ pub async fn handle_announce(
     core_config: &Arc<Core>,
     announce_handler: &Arc<AnnounceHandler>,
     whitelist_authorization: &Arc<whitelist::authorization::WhitelistAuthorization>,
-    opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    opt_udp_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     cookie_valid_range: Range<f64>,
 ) -> Result<Response, (Error, TransactionId)> {
     tracing::Span::current()
@@ -42,7 +42,7 @@ pub async fn handle_announce(
 
     tracing::trace!("handle announce");
 
-    let announce_data = udp_tracker_core::services::announce::handle_announce(
+    let announce_data = services::announce::handle_announce(
         remote_addr,
         request,
         announce_handler,
@@ -128,8 +128,8 @@ mod tests {
             AnnounceActionPlaceholder, AnnounceEvent, AnnounceRequest, ConnectionId, NumberOfBytes, NumberOfPeers,
             PeerId as AquaticPeerId, PeerKey, Port, TransactionId,
         };
+        use bittorrent_udp_tracker_core::connection_cookie::make;
 
-        use crate::packages::udp_tracker_core::connection_cookie::make;
         use crate::servers::udp::handlers::tests::{sample_ipv4_remote_addr_fingerprint, sample_issue_time};
 
         struct AnnounceRequestBuilder {
@@ -205,11 +205,11 @@ mod tests {
             use bittorrent_tracker_core::announce_handler::AnnounceHandler;
             use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
             use bittorrent_tracker_core::whitelist;
+            use bittorrent_udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
+            use bittorrent_udp_tracker_core::statistics;
             use mockall::predicate::eq;
             use torrust_tracker_configuration::Core;
 
-            use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
-            use crate::packages::{self, udp_tracker_core};
             use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
             use crate::servers::udp::handlers::handle_announce;
             use crate::servers::udp::handlers::tests::{
@@ -366,7 +366,7 @@ mod tests {
                 whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
             ) -> Response {
                 let (udp_stats_event_sender, _udp_stats_repository) =
-                    packages::udp_tracker_core::statistics::setup::factory(false);
+                    bittorrent_udp_tracker_core::statistics::setup::factory(false);
                 let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
 
                 let remote_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(126, 0, 0, 1)), 8080);
@@ -414,10 +414,10 @@ mod tests {
                 let mut udp_stats_event_sender_mock = MockUdpStatsEventSender::new();
                 udp_stats_event_sender_mock
                     .expect_send_event()
-                    .with(eq(udp_tracker_core::statistics::event::Event::Udp4Announce))
+                    .with(eq(statistics::event::Event::Udp4Announce))
                     .times(1)
                     .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-                let udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>> =
+                let udp_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                     Arc::new(Some(Box::new(udp_stats_event_sender_mock)));
 
                 let (core_tracker_services, _core_udp_tracker_services) =
@@ -441,8 +441,8 @@ mod tests {
                 use std::sync::Arc;
 
                 use aquatic_udp_protocol::{InfoHash as AquaticInfoHash, PeerId as AquaticPeerId};
+                use bittorrent_udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
 
-                use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
                 use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
                 use crate::servers::udp::handlers::handle_announce;
                 use crate::servers::udp::handlers::tests::{
@@ -512,11 +512,11 @@ mod tests {
             use bittorrent_tracker_core::announce_handler::AnnounceHandler;
             use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
             use bittorrent_tracker_core::whitelist;
+            use bittorrent_udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
+            use bittorrent_udp_tracker_core::statistics;
             use mockall::predicate::eq;
             use torrust_tracker_configuration::Core;
 
-            use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
-            use crate::packages::{self, udp_tracker_core};
             use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
             use crate::servers::udp::handlers::handle_announce;
             use crate::servers::udp::handlers::tests::{
@@ -677,7 +677,7 @@ mod tests {
                 whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
             ) -> Response {
                 let (udp_stats_event_sender, _udp_stats_repository) =
-                    packages::udp_tracker_core::statistics::setup::factory(false);
+                    bittorrent_udp_tracker_core::statistics::setup::factory(false);
                 let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
 
                 let client_ip_v4 = Ipv4Addr::new(126, 0, 0, 1);
@@ -728,10 +728,10 @@ mod tests {
                 let mut udp_stats_event_sender_mock = MockUdpStatsEventSender::new();
                 udp_stats_event_sender_mock
                     .expect_send_event()
-                    .with(eq(udp_tracker_core::statistics::event::Event::Udp6Announce))
+                    .with(eq(statistics::event::Event::Udp6Announce))
                     .times(1)
                     .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-                let udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>> =
+                let udp_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                     Arc::new(Some(Box::new(udp_stats_event_sender_mock)));
 
                 let (core_tracker_services, _core_udp_tracker_services) =
@@ -768,10 +768,10 @@ mod tests {
                 use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentTorrentRepository;
                 use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
                 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
+                use bittorrent_udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
+                use bittorrent_udp_tracker_core::{self, statistics};
                 use mockall::predicate::eq;
 
-                use crate::packages::udp_tracker_core;
-                use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
                 use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
                 use crate::servers::udp::handlers::handle_announce;
                 use crate::servers::udp::handlers::tests::{
@@ -792,10 +792,10 @@ mod tests {
                     let mut udp_stats_event_sender_mock = MockUdpStatsEventSender::new();
                     udp_stats_event_sender_mock
                         .expect_send_event()
-                        .with(eq(udp_tracker_core::statistics::event::Event::Udp6Announce))
+                        .with(eq(statistics::event::Event::Udp6Announce))
                         .times(1)
                         .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-                    let udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>> =
+                    let udp_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                         Arc::new(Some(Box::new(udp_stats_event_sender_mock)));
 
                     let announce_handler = Arc::new(AnnounceHandler::new(

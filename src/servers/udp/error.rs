@@ -2,12 +2,11 @@
 use std::panic::Location;
 
 use aquatic_udp_protocol::{ConnectionId, RequestParseError};
+use bittorrent_udp_tracker_core::services::announce::UdpAnnounceError;
+use bittorrent_udp_tracker_core::services::scrape::UdpScrapeError;
 use derive_more::derive::Display;
 use thiserror::Error;
 use torrust_tracker_located_error::LocatedError;
-
-use crate::packages::udp_tracker_core::services::announce::UdpAnnounceError;
-use crate::packages::udp_tracker_core::services::scrape::UdpScrapeError;
 
 #[derive(Display, Debug)]
 #[display(":?")]

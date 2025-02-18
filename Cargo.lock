@@ -644,6 +644,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bittorrent-udp-tracker-core"
+version = "3.0.0-develop"
+dependencies = [
+ "aquatic_udp_protocol",
+ "bittorrent-primitives",
+ "bittorrent-tracker-core",
+ "bittorrent-udp-protocol",
+ "bloom",
+ "blowfish",
+ "cipher",
+ "futures",
+ "lazy_static",
+ "mockall",
+ "rand 0.8.5",
+ "thiserror 2.0.11",
+ "tokio",
+ "torrust-tracker-configuration",
+ "torrust-tracker-primitives",
+ "torrust-tracker-test-helpers",
+ "tracing",
+ "zerocopy 0.7.35",
+]
+
+[[package]]
 name = "bitvec"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4310,12 +4334,9 @@ dependencies = [
  "bittorrent-primitives",
  "bittorrent-tracker-client",
  "bittorrent-tracker-core",
- "bittorrent-udp-protocol",
- "bloom",
- "blowfish",
+ "bittorrent-udp-tracker-core",
  "camino",
  "chrono",
- "cipher",
  "clap",
  "crossbeam-skiplist",
  "dashmap",
