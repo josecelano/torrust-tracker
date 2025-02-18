@@ -11,6 +11,7 @@ use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::whitelist;
 use torrust_tracker_configuration::Core;
+use torrust_tracker_primitives::core::AnnounceData;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
@@ -41,7 +42,7 @@ pub async fn handle_announce(
 
     tracing::trace!("handle announce");
 
-    let response = udp_tracker_core::services::announce::handle_announce(
+    let announce_data = udp_tracker_core::services::announce::handle_announce(
         remote_addr,
         request,
         announce_handler,
@@ -52,18 +53,25 @@ pub async fn handle_announce(
     .await
     .map_err(|e| (e.into(), request.transaction_id))?;
 
-    // todo: extract `build_response` function.
+    Ok(build_response(remote_addr, request, core_config, &announce_data))
+}
 
+fn build_response(
+    remote_addr: SocketAddr,
+    request: &AnnounceRequest,
+    core_config: &Arc<Core>,
+    announce_data: &AnnounceData,
+) -> Response {
     #[allow(clippy::cast_possible_truncation)]
     if remote_addr.is_ipv4() {
         let announce_response = AnnounceResponse {
             fixed: AnnounceResponseFixedData {
                 transaction_id: request.transaction_id,
                 announce_interval: AnnounceInterval(I32::new(i64::from(core_config.announce_policy.interval) as i32)),
-                leechers: NumberOfPeers(I32::new(i64::from(response.stats.incomplete) as i32)),
-                seeders: NumberOfPeers(I32::new(i64::from(response.stats.complete) as i32)),
+                leechers: NumberOfPeers(I32::new(i64::from(announce_data.stats.incomplete) as i32)),
+                seeders: NumberOfPeers(I32::new(i64::from(announce_data.stats.complete) as i32)),
             },
-            peers: response
+            peers: announce_data
                 .peers
                 .iter()
                 .filter_map(|peer| {
@@ -79,16 +87,16 @@ pub async fn handle_announce(
                 .collect(),
         };
 
-        Ok(Response::from(announce_response))
+        Response::from(announce_response)
     } else {
         let announce_response = AnnounceResponse {
             fixed: AnnounceResponseFixedData {
                 transaction_id: request.transaction_id,
                 announce_interval: AnnounceInterval(I32::new(i64::from(core_config.announce_policy.interval) as i32)),
-                leechers: NumberOfPeers(I32::new(i64::from(response.stats.incomplete) as i32)),
-                seeders: NumberOfPeers(I32::new(i64::from(response.stats.complete) as i32)),
+                leechers: NumberOfPeers(I32::new(i64::from(announce_data.stats.incomplete) as i32)),
+                seeders: NumberOfPeers(I32::new(i64::from(announce_data.stats.complete) as i32)),
             },
-            peers: response
+            peers: announce_data
                 .peers
                 .iter()
                 .filter_map(|peer| {
@@ -104,7 +112,7 @@ pub async fn handle_announce(
                 .collect(),
         };
 
-        Ok(Response::from(announce_response))
+        Response::from(announce_response)
     }
 }
 

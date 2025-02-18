@@ -7,6 +7,7 @@ use aquatic_udp_protocol::{
     NumberOfDownloads, NumberOfPeers, Response, ScrapeRequest, ScrapeResponse, TorrentScrapeStatistics, TransactionId,
 };
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
+use torrust_tracker_primitives::core::ScrapeData;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
@@ -43,8 +44,10 @@ pub async fn handle_scrape(
     .await
     .map_err(|e| (e.into(), request.transaction_id))?;
 
-    // todo: extract `build_response` function.
+    Ok(build_response(request, &scrape_data))
+}
 
+fn build_response(request: &ScrapeRequest, scrape_data: &ScrapeData) -> Response {
     let mut torrent_stats: Vec<TorrentScrapeStatistics> = Vec::new();
 
     for file in &scrape_data.files {
@@ -67,7 +70,7 @@ pub async fn handle_scrape(
         torrent_stats,
     };
 
-    Ok(Response::from(response))
+    Response::from(response)
 }
 
 #[cfg(test)]

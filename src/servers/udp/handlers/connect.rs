@@ -2,7 +2,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, Response};
+use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, ConnectionId, Response};
 use tracing::{instrument, Level};
 
 use crate::packages::udp_tracker_core;
@@ -25,12 +25,9 @@ pub async fn handle_connect(
 
     tracing::trace!("handle connect");
 
-    let connection_id = make(gen_remote_fingerprint(&remote_addr), cookie_issue_time).expect("it should be a normal value");
+    // todo: move to connect service in udp_tracker_core
 
-    let response = ConnectResponse {
-        transaction_id: request.transaction_id,
-        connection_id,
-    };
+    let connection_id = make(gen_remote_fingerprint(&remote_addr), cookie_issue_time).expect("it should be a normal value");
 
     if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
         match remote_addr {
@@ -46,6 +43,15 @@ pub async fn handle_connect(
             }
         }
     }
+
+    build_response(*request, connection_id)
+}
+
+fn build_response(request: ConnectRequest, connection_id: ConnectionId) -> Response {
+    let response = ConnectResponse {
+        transaction_id: request.transaction_id,
+        connection_id,
+    };
 
     Response::from(response)
 }
