@@ -3,11 +3,10 @@ use std::sync::Arc;
 use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
 use bittorrent_udp_tracker_core::services::banning::BanService;
 use bittorrent_udp_tracker_core::{self, statistics};
-use packages::tracker_api_core::statistics::metrics::Metrics;
 use tokio::sync::RwLock;
 use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
 
-use crate::packages::{self};
+use crate::statistics::metrics::Metrics;
 
 /// All the metrics collected by the tracker.
 #[derive(Debug, PartialEq)]
@@ -84,8 +83,8 @@ mod tests {
     use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::packages::tracker_api_core::statistics::metrics::Metrics;
-    use crate::packages::tracker_api_core::statistics::services::{get_metrics, TrackerMetrics};
+    use crate::statistics::metrics::Metrics;
+    use crate::statistics::services::{get_metrics, TrackerMetrics};
 
     pub fn tracker_configuration() -> Configuration {
         configuration::ephemeral()

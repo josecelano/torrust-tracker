@@ -17,13 +17,13 @@ lazy_static! {
     /// The random static seed.
     pub static ref RANDOM_SEED: Seed = {
         let mut rng = ThreadRng::default();
-        rng.gen::<Seed>()
+        rng.random::<Seed>()
     };
 
     /// The random cipher from the seed.
     pub static ref RANDOM_CIPHER_BLOWFISH: CipherBlowfish = {
         let mut rng = ThreadRng::default();
-        let seed: Seed = rng.gen();
+        let seed: Seed = rng.random();
         CipherBlowfish::new_from_slice(&seed).expect("it could not generate key")
     };
 
