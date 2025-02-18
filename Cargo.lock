@@ -674,7 +674,7 @@ dependencies = [
  "futures",
  "lazy_static",
  "mockall",
- "rand 0.8.5",
+ "rand 0.9.0",
  "thiserror 2.0.11",
  "tokio",
  "torrust-tracker-configuration",
@@ -4387,6 +4387,7 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "torrust-tracker-api-client",
+ "torrust-tracker-api-core",
  "torrust-tracker-clock",
  "torrust-tracker-configuration",
  "torrust-tracker-located-error",
@@ -4412,6 +4413,19 @@ dependencies = [
  "thiserror 2.0.11",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "torrust-tracker-api-core"
+version = "3.0.0-develop"
+dependencies = [
+ "bittorrent-http-tracker-core",
+ "bittorrent-tracker-core",
+ "bittorrent-udp-tracker-core",
+ "tokio",
+ "torrust-tracker-configuration",
+ "torrust-tracker-primitives",
+ "torrust-tracker-test-helpers",
 ]
 
 [[package]]
