@@ -568,6 +568,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "bittorrent-http-tracker-core"
+version = "3.0.0-develop"
+dependencies = [
+ "aquatic_udp_protocol",
+ "bittorrent-http-protocol",
+ "bittorrent-primitives",
+ "bittorrent-tracker-core",
+ "futures",
+ "mockall",
+ "tokio",
+ "torrust-tracker-configuration",
+ "torrust-tracker-primitives",
+ "torrust-tracker-test-helpers",
+ "tracing",
+]
+
+[[package]]
 name = "bittorrent-primitives"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4331,6 +4348,7 @@ dependencies = [
  "axum-extra",
  "axum-server",
  "bittorrent-http-protocol",
+ "bittorrent-http-tracker-core",
  "bittorrent-primitives",
  "bittorrent-tracker-client",
  "bittorrent-tracker-core",

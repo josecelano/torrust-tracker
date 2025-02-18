@@ -7,7 +7,7 @@ use packages::tracker_api_core::statistics::metrics::Metrics;
 use tokio::sync::RwLock;
 use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
 
-use crate::packages::{self, http_tracker_core};
+use crate::packages::{self};
 
 /// All the metrics collected by the tracker.
 #[derive(Debug, PartialEq)]
@@ -27,7 +27,7 @@ pub struct TrackerMetrics {
 pub async fn get_metrics(
     in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
     ban_service: Arc<RwLock<BanService>>,
-    http_stats_repository: Arc<http_tracker_core::statistics::repository::Repository>,
+    http_stats_repository: Arc<bittorrent_http_tracker_core::statistics::repository::Repository>,
     udp_stats_repository: Arc<statistics::repository::Repository>,
 ) -> TrackerMetrics {
     let torrents_metrics = in_memory_torrent_repository.get_torrents_metrics();
@@ -84,7 +84,6 @@ mod tests {
     use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::packages::http_tracker_core;
     use crate::packages::tracker_api_core::statistics::metrics::Metrics;
     use crate::packages::tracker_api_core::statistics::services::{get_metrics, TrackerMetrics};
 
@@ -101,7 +100,7 @@ mod tests {
 
         // HTTP stats
         let (_http_stats_event_sender, http_stats_repository) =
-            http_tracker_core::statistics::setup::factory(config.core.tracker_usage_statistics);
+            bittorrent_http_tracker_core::statistics::setup::factory(config.core.tracker_usage_statistics);
         let http_stats_repository = Arc::new(http_stats_repository);
 
         // UDP stats

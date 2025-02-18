@@ -39,7 +39,6 @@ use tracing::instrument;
 use super::config::initialize_configuration;
 use crate::bootstrap;
 use crate::container::AppContainer;
-use crate::packages::http_tracker_core;
 
 /// It loads the configuration from the environment and builds app container.
 ///
@@ -93,7 +92,7 @@ pub fn initialize_app_container(configuration: &Configuration) -> AppContainer {
 
     // HTTP stats
     let (http_stats_event_sender, http_stats_repository) =
-        http_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
+        bittorrent_http_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
     let http_stats_event_sender = Arc::new(http_stats_event_sender);
     let http_stats_repository = Arc::new(http_stats_repository);
 

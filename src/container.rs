@@ -16,8 +16,6 @@ use bittorrent_udp_tracker_core::{self};
 use tokio::sync::RwLock;
 use torrust_tracker_configuration::{Core, HttpApi, HttpTracker, UdpTracker};
 
-use crate::packages::http_tracker_core;
-
 pub struct AppContainer {
     pub core_config: Arc<Core>,
     pub database: Arc<Box<dyn Database>>,
@@ -28,9 +26,9 @@ pub struct AppContainer {
     pub in_memory_whitelist: Arc<InMemoryWhitelist>,
     pub whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
     pub ban_service: Arc<RwLock<BanService>>,
-    pub http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    pub http_stats_event_sender: Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
     pub udp_stats_event_sender: Arc<Option<Box<dyn bittorrent_udp_tracker_core::statistics::event::sender::Sender>>>,
-    pub http_stats_repository: Arc<http_tracker_core::statistics::repository::Repository>,
+    pub http_stats_repository: Arc<bittorrent_http_tracker_core::statistics::repository::Repository>,
     pub udp_stats_repository: Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
     pub whitelist_manager: Arc<WhitelistManager>,
     pub in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
@@ -69,7 +67,7 @@ pub struct HttpTrackerContainer {
     pub announce_handler: Arc<AnnounceHandler>,
     pub scrape_handler: Arc<ScrapeHandler>,
     pub whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
-    pub http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    pub http_stats_event_sender: Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
     pub authentication_service: Arc<AuthenticationService>,
 }
 
@@ -95,7 +93,7 @@ pub struct HttpApiContainer {
     pub keys_handler: Arc<KeysHandler>,
     pub whitelist_manager: Arc<WhitelistManager>,
     pub ban_service: Arc<RwLock<BanService>>,
-    pub http_stats_repository: Arc<http_tracker_core::statistics::repository::Repository>,
+    pub http_stats_repository: Arc<bittorrent_http_tracker_core::statistics::repository::Repository>,
     pub udp_stats_repository: Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
 }
 

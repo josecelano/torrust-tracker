@@ -2,14 +2,14 @@
 //!
 //! It includes:
 //!
-//! - A [`factory`](crate::packages::http_tracker_core::statistics::setup::factory) function to build the structs needed to collect the tracker metrics.
-//! - A [`get_metrics`] service to get the tracker [`metrics`](crate::packages::http_tracker_core::statistics::metrics::Metrics).
+//! - A [`factory`](crate::statistics::setup::factory) function to build the structs needed to collect the tracker metrics.
+//! - A [`get_metrics`] service to get the tracker [`metrics`](crate::statistics::metrics::Metrics).
 //!
 //! Tracker metrics are collected using a Publisher-Subscribe pattern.
 //!
 //! The factory function builds two structs:
 //!
-//! - An statistics event [`Sender`](crate::packages::http_tracker_core::statistics::event::sender::Sender)
+//! - An statistics event [`Sender`](crate::statistics::event::sender::Sender)
 //! - An statistics [`Repository`]
 //!
 //! ```text
@@ -23,11 +23,10 @@
 use std::sync::Arc;
 
 use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
-use packages::http_tracker_core::statistics::metrics::Metrics;
-use packages::http_tracker_core::statistics::repository::Repository;
 use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
 
-use crate::packages;
+use crate::statistics::metrics::Metrics;
+use crate::statistics::repository::Repository;
 
 /// All the metrics collected by the tracker.
 #[derive(Debug, PartialEq)]
@@ -76,8 +75,8 @@ mod tests {
     use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::packages::http_tracker_core::statistics::services::{get_metrics, TrackerMetrics};
-    use crate::packages::http_tracker_core::{self, statistics};
+    use crate::statistics;
+    use crate::statistics::services::{get_metrics, TrackerMetrics};
 
     pub fn tracker_configuration() -> Configuration {
         configuration::ephemeral()
@@ -89,8 +88,7 @@ mod tests {
 
         let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
 
-        let (_http_stats_event_sender, http_stats_repository) =
-            http_tracker_core::statistics::setup::factory(config.core.tracker_usage_statistics);
+        let (_http_stats_event_sender, http_stats_repository) = statistics::setup::factory(config.core.tracker_usage_statistics);
         let http_stats_repository = Arc::new(http_stats_repository);
 
         let tracker_metrics = get_metrics(in_memory_torrent_repository.clone(), http_stats_repository.clone()).await;

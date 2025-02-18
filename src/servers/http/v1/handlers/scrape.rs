@@ -19,7 +19,6 @@ use hyper::StatusCode;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
 
-use crate::packages::http_tracker_core;
 use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
 use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
 use crate::servers::http::v1::extractors::scrape_request::ExtractRequest;
@@ -33,7 +32,7 @@ pub async fn handle_without_key(
         Arc<Core>,
         Arc<ScrapeHandler>,
         Arc<AuthenticationService>,
-        Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+        Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
     )>,
     ExtractRequest(scrape_request): ExtractRequest,
     ExtractClientIpSources(client_ip_sources): ExtractClientIpSources,
@@ -63,7 +62,7 @@ pub async fn handle_with_key(
         Arc<Core>,
         Arc<ScrapeHandler>,
         Arc<AuthenticationService>,
-        Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+        Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
     )>,
     ExtractRequest(scrape_request): ExtractRequest,
     ExtractClientIpSources(client_ip_sources): ExtractClientIpSources,
@@ -88,7 +87,7 @@ async fn handle(
     core_config: &Arc<Core>,
     scrape_handler: &Arc<ScrapeHandler>,
     authentication_service: &Arc<AuthenticationService>,
-    http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    http_stats_event_sender: &Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
     scrape_request: &Scrape,
     client_ip_sources: &ClientIpSources,
     maybe_key: Option<Key>,
@@ -116,12 +115,12 @@ async fn handle_scrape(
     core_config: &Arc<Core>,
     scrape_handler: &Arc<ScrapeHandler>,
     authentication_service: &Arc<AuthenticationService>,
-    opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    opt_http_stats_event_sender: &Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
     scrape_request: &Scrape,
     client_ip_sources: &ClientIpSources,
     maybe_key: Option<Key>,
 ) -> Result<ScrapeData, responses::error::Error> {
-    http_tracker_core::services::scrape::handle_scrape(
+    bittorrent_http_tracker_core::services::scrape::handle_scrape(
         core_config,
         scrape_handler,
         authentication_service,
@@ -158,8 +157,6 @@ mod tests {
     use torrust_tracker_configuration::{Configuration, Core};
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::packages::http_tracker_core;
-
     struct CoreTrackerServices {
         pub core_config: Arc<Core>,
         pub scrape_handler: Arc<ScrapeHandler>,
@@ -167,7 +164,7 @@ mod tests {
     }
 
     struct CoreHttpTrackerServices {
-        pub http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+        pub http_stats_event_sender: Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
     }
 
     fn initialize_private_tracker() -> (CoreTrackerServices, CoreHttpTrackerServices) {
@@ -197,7 +194,7 @@ mod tests {
 
         // HTTP stats
         let (http_stats_event_sender, _http_stats_repository) =
-            http_tracker_core::statistics::setup::factory(config.core.tracker_usage_statistics);
+            bittorrent_http_tracker_core::statistics::setup::factory(config.core.tracker_usage_statistics);
         let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
         (

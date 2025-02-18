@@ -20,7 +20,7 @@ use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
 
-use crate::packages::http_tracker_core;
+use crate::statistics;
 
 /// The HTTP tracker `scrape` service.
 ///
@@ -43,7 +43,7 @@ pub async fn handle_scrape(
     core_config: &Arc<Core>,
     scrape_handler: &Arc<ScrapeHandler>,
     authentication_service: &Arc<AuthenticationService>,
-    opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    opt_http_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     scrape_request: &Scrape,
     client_ip_sources: &ClientIpSources,
     maybe_key: Option<Key>,
@@ -70,9 +70,7 @@ pub async fn handle_scrape(
     };
 
     if return_fake_scrape_data {
-        return Ok(
-            http_tracker_core::services::scrape::fake(opt_http_stats_event_sender, &scrape_request.info_hashes, &peer_ip).await,
-        );
+        return Ok(fake(opt_http_stats_event_sender, &scrape_request.info_hashes, &peer_ip).await);
     }
 
     let scrape_data = scrape_handler.scrape(&scrape_request.info_hashes).await?;
@@ -89,7 +87,7 @@ pub async fn handle_scrape(
 ///
 /// > **NOTICE**: tracker statistics are not updated in this case.
 pub async fn fake(
-    opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    opt_http_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     info_hashes: &Vec<InfoHash>,
     original_peer_ip: &IpAddr,
 ) -> ScrapeData {
@@ -100,19 +98,15 @@ pub async fn fake(
 
 async fn send_scrape_event(
     original_peer_ip: &IpAddr,
-    opt_http_stats_event_sender: &Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
+    opt_http_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
 ) {
     if let Some(http_stats_event_sender) = opt_http_stats_event_sender.as_deref() {
         match original_peer_ip {
             IpAddr::V4(_) => {
-                http_stats_event_sender
-                    .send_event(http_tracker_core::statistics::event::Event::Tcp4Scrape)
-                    .await;
+                http_stats_event_sender.send_event(statistics::event::Event::Tcp4Scrape).await;
             }
             IpAddr::V6(_) => {
-                http_stats_event_sender
-                    .send_event(http_tracker_core::statistics::event::Event::Tcp6Scrape)
-                    .await;
+                http_stats_event_sender.send_event(statistics::event::Event::Tcp6Scrape).await;
             }
         }
     }
@@ -142,8 +136,8 @@ mod tests {
     use torrust_tracker_primitives::{peer, DurationSinceUnixEpoch};
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::packages::http_tracker_core;
-    use crate::servers::http::test_helpers::tests::sample_info_hash;
+    use crate::statistics;
+    use crate::tests::sample_info_hash;
 
     struct Container {
         announce_handler: Arc<AnnounceHandler>,
@@ -198,8 +192,8 @@ mod tests {
 
     mock! {
         HttpStatsEventSender {}
-        impl http_tracker_core::statistics::event::sender::Sender for HttpStatsEventSender {
-             fn send_event(&self, event: http_tracker_core::statistics::event::Event) -> BoxFuture<'static,Option<Result<(),SendError<http_tracker_core::statistics::event::Event> > > > ;
+        impl statistics::event::sender::Sender for HttpStatsEventSender {
+             fn send_event(&self, event: statistics::event::Event) -> BoxFuture<'static,Option<Result<(),SendError<statistics::event::Event> > > > ;
         }
     }
 
@@ -217,20 +211,19 @@ mod tests {
         use torrust_tracker_primitives::swarm_metadata::SwarmMetadata;
         use torrust_tracker_test_helpers::configuration;
 
-        use crate::packages::http_tracker_core::services::scrape::handle_scrape;
-        use crate::packages::http_tracker_core::services::scrape::tests::{
+        use crate::services::scrape::handle_scrape;
+        use crate::services::scrape::tests::{
             initialize_services_with_configuration, sample_info_hashes, sample_peer, MockHttpStatsEventSender,
         };
-        use crate::packages::{self, http_tracker_core};
-        use crate::servers::http::test_helpers::tests::sample_info_hash;
+        use crate::statistics;
+        use crate::tests::sample_info_hash;
 
         #[tokio::test]
         async fn it_should_return_the_scrape_data_for_a_torrent() {
             let configuration = configuration::ephemeral_public();
             let core_config = Arc::new(configuration.core.clone());
 
-            let (http_stats_event_sender, _http_stats_repository) =
-                packages::http_tracker_core::statistics::setup::factory(false);
+            let (http_stats_event_sender, _http_stats_repository) = statistics::setup::factory(false);
             let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
             let container = initialize_services_with_configuration(&configuration);
@@ -288,10 +281,10 @@ mod tests {
             let mut http_stats_event_sender_mock = MockHttpStatsEventSender::new();
             http_stats_event_sender_mock
                 .expect_send_event()
-                .with(eq(http_tracker_core::statistics::event::Event::Tcp4Scrape))
+                .with(eq(statistics::event::Event::Tcp4Scrape))
                 .times(1)
                 .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-            let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
+            let http_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
             let container = initialize_services_with_configuration(&config);
@@ -327,10 +320,10 @@ mod tests {
             let mut http_stats_event_sender_mock = MockHttpStatsEventSender::new();
             http_stats_event_sender_mock
                 .expect_send_event()
-                .with(eq(http_tracker_core::statistics::event::Event::Tcp6Scrape))
+                .with(eq(statistics::event::Event::Tcp6Scrape))
                 .times(1)
                 .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-            let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
+            let http_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
             let container = initialize_services_with_configuration(&config);
@@ -370,17 +363,16 @@ mod tests {
         use mockall::predicate::eq;
         use torrust_tracker_primitives::core::ScrapeData;
 
-        use crate::packages::http_tracker_core::services::scrape::fake;
-        use crate::packages::http_tracker_core::services::scrape::tests::{
+        use crate::services::scrape::fake;
+        use crate::services::scrape::tests::{
             initialize_services_for_public_tracker, sample_info_hashes, sample_peer, MockHttpStatsEventSender,
         };
-        use crate::packages::{self, http_tracker_core};
-        use crate::servers::http::test_helpers::tests::sample_info_hash;
+        use crate::statistics;
+        use crate::tests::sample_info_hash;
 
         #[tokio::test]
         async fn it_should_always_return_the_zeroed_scrape_data_for_a_torrent() {
-            let (http_stats_event_sender, _http_stats_repository) =
-                packages::http_tracker_core::statistics::setup::factory(false);
+            let (http_stats_event_sender, _http_stats_repository) = statistics::setup::factory(false);
             let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
             let container = initialize_services_for_public_tracker();
@@ -409,10 +401,10 @@ mod tests {
             let mut http_stats_event_sender_mock = MockHttpStatsEventSender::new();
             http_stats_event_sender_mock
                 .expect_send_event()
-                .with(eq(http_tracker_core::statistics::event::Event::Tcp4Scrape))
+                .with(eq(statistics::event::Event::Tcp4Scrape))
                 .times(1)
                 .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-            let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
+            let http_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
             let peer_ip = IpAddr::V4(Ipv4Addr::new(126, 0, 0, 1));
@@ -425,10 +417,10 @@ mod tests {
             let mut http_stats_event_sender_mock = MockHttpStatsEventSender::new();
             http_stats_event_sender_mock
                 .expect_send_event()
-                .with(eq(http_tracker_core::statistics::event::Event::Tcp6Scrape))
+                .with(eq(statistics::event::Event::Tcp6Scrape))
                 .times(1)
                 .returning(|_| Box::pin(future::ready(Some(Ok(())))));
-            let http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>> =
+            let http_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>> =
                 Arc::new(Some(Box::new(http_stats_event_sender_mock)));
 
             let peer_ip = IpAddr::V6(Ipv6Addr::new(0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969, 0x6969));
