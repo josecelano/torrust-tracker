@@ -1,5 +1,5 @@
-use crate::packages::http_tracker_core::statistics::event::Event;
-use crate::packages::http_tracker_core::statistics::repository::Repository;
+use crate::statistics::event::Event;
+use crate::statistics::repository::Repository;
 
 pub async fn handle_event(event: Event, stats_repository: &Repository) {
     match event {
@@ -29,9 +29,9 @@ pub async fn handle_event(event: Event, stats_repository: &Repository) {
 
 #[cfg(test)]
 mod tests {
-    use crate::packages::http_tracker_core::statistics::event::handler::handle_event;
-    use crate::packages::http_tracker_core::statistics::event::Event;
-    use crate::packages::http_tracker_core::statistics::repository::Repository;
+    use crate::statistics::event::handler::handle_event;
+    use crate::statistics::event::Event;
+    use crate::statistics::repository::Repository;
 
     #[tokio::test]
     async fn should_increase_the_tcp4_announces_counter_when_it_receives_a_tcp4_announce_event() {

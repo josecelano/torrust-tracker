@@ -10,7 +10,6 @@ use torrust_tracker_configuration::Configuration;
 use torrust_tracker_lib::bootstrap::app::{initialize_app_container, initialize_global_services};
 use torrust_tracker_lib::bootstrap::jobs::make_rust_tls;
 use torrust_tracker_lib::container::HttpTrackerContainer;
-use torrust_tracker_lib::packages::http_tracker_core;
 use torrust_tracker_lib::servers::http::server::{HttpServer, Launcher, Running, Stopped};
 use torrust_tracker_lib::servers::registar::Registar;
 use torrust_tracker_primitives::peer;
@@ -21,7 +20,7 @@ pub struct Environment<S> {
     pub database: Arc<Box<dyn Database>>,
     pub in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
     pub keys_handler: Arc<KeysHandler>,
-    pub http_stats_repository: Arc<http_tracker_core::statistics::repository::Repository>,
+    pub http_stats_repository: Arc<bittorrent_http_tracker_core::statistics::repository::Repository>,
     pub whitelist_manager: Arc<WhitelistManager>,
 
     pub registar: Registar,

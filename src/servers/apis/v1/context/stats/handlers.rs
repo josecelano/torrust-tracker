@@ -11,7 +11,6 @@ use serde::Deserialize;
 use tokio::sync::RwLock;
 
 use super::responses::{metrics_response, stats_response};
-use crate::packages::http_tracker_core;
 use crate::packages::tracker_api_core::statistics::services::get_metrics;
 
 #[derive(Deserialize, Debug, Default)]
@@ -43,7 +42,7 @@ pub async fn get_stats_handler(
     State(state): State<(
         Arc<InMemoryTorrentRepository>,
         Arc<RwLock<BanService>>,
-        Arc<http_tracker_core::statistics::repository::Repository>,
+        Arc<bittorrent_http_tracker_core::statistics::repository::Repository>,
         Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
     )>,
     params: Query<QueryParams>,
