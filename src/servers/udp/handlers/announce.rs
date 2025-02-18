@@ -50,7 +50,7 @@ pub async fn handle_announce(
         gen_remote_fingerprint(&remote_addr),
         cookie_valid_range,
     )
-    .map_err(|e| (e, request.transaction_id))?;
+    .map_err(|e| (e.into(), request.transaction_id))?;
 
     let response = udp_tracker_core::services::announce::handle_announce(
         remote_addr,

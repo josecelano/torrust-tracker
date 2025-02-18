@@ -13,14 +13,9 @@ pub struct ConnectionCookie(pub ConnectionId);
 /// Error returned by the UDP server.
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("cookie value is not normal: {not_normal_value}")]
-    CookieValueNotNormal { not_normal_value: f64 },
-
-    #[error("cookie value is expired: {expired_value}, expected > {min_value}")]
-    CookieValueExpired { expired_value: f64, min_value: f64 },
-
-    #[error("cookie value is from future: {future_value}, expected < {max_value}")]
-    CookieValueFromFuture { future_value: f64, max_value: f64 },
+    /// Error returned when there was an error with the connection cookie.
+    #[error("Connection cookie error: {source}")]
+    ConnectionCookieError { source: ConnectionCookieError },
 
     #[error("error when phrasing request: {request_parse_error:?}")]
     RequestParseError { request_parse_error: RequestParseError },
@@ -49,8 +44,29 @@ pub enum Error {
     TrackerAuthenticationRequired { location: &'static Location<'static> },
 }
 
+/// Error returned when there was an error with the connection cookie.
+#[derive(Error, Debug)]
+pub enum ConnectionCookieError {
+    #[error("cookie value is not normal: {not_normal_value}")]
+    ValueNotNormal { not_normal_value: f64 },
+
+    #[error("cookie value is expired: {expired_value}, expected > {min_value}")]
+    ValueExpired { expired_value: f64, min_value: f64 },
+
+    #[error("cookie value is from future: {future_value}, expected < {max_value}")]
+    ValueFromFuture { future_value: f64, max_value: f64 },
+}
+
 impl From<RequestParseError> for Error {
     fn from(request_parse_error: RequestParseError) -> Self {
         Self::RequestParseError { request_parse_error }
+    }
+}
+
+impl From<ConnectionCookieError> for Error {
+    fn from(connection_cookie_error: ConnectionCookieError) -> Self {
+        Self::ConnectionCookieError {
+            source: connection_cookie_error,
+        }
     }
 }

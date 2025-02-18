@@ -78,15 +78,10 @@ pub(crate) async fn handle_packet(
             {
                 Ok(response) => return response,
                 Err((e, transaction_id)) => {
-                    match &e {
-                        Error::CookieValueNotNormal { .. }
-                        | Error::CookieValueExpired { .. }
-                        | Error::CookieValueFromFuture { .. } => {
-                            // code-review: should we include `RequestParseError` and `BadRequest`?
-                            let mut ban_service = udp_tracker_container.ban_service.write().await;
-                            ban_service.increase_counter(&udp_request.from.ip());
-                        }
-                        _ => {}
+                    if let Error::ConnectionCookieError { .. } = &e {
+                        // code-review: should we include `RequestParseError` and `BadRequest`?
+                        let mut ban_service = udp_tracker_container.ban_service.write().await;
+                        ban_service.increase_counter(&udp_request.from.ip());
                     }
 
                     handle_error(

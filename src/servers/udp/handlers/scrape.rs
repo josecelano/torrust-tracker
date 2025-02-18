@@ -42,7 +42,7 @@ pub async fn handle_scrape(
         gen_remote_fingerprint(&remote_addr),
         cookie_valid_range,
     )
-    .map_err(|e| (e, request.transaction_id))?;
+    .map_err(|e| (e.into(), request.transaction_id))?;
 
     let scrape_data =
         udp_tracker_core::services::scrape::handle_scrape(remote_addr, request, scrape_handler, opt_udp_stats_event_sender)
