@@ -6,14 +6,9 @@ use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, ConnectionId, Respon
 use tracing::{instrument, Level};
 
 use crate::packages::udp_tracker_core;
-use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
 
 /// It handles the `Connect` request. Refer to [`Connect`](crate::servers::udp#connect)
 /// request for more information.
-///
-/// # Errors
-///
-/// This function does not ever return an error.
 #[instrument(fields(transaction_id), skip(opt_udp_stats_event_sender), ret(level = Level::TRACE))]
 pub async fn handle_connect(
     remote_addr: SocketAddr,
@@ -22,27 +17,10 @@ pub async fn handle_connect(
     cookie_issue_time: f64,
 ) -> Response {
     tracing::Span::current().record("transaction_id", request.transaction_id.0.to_string());
-
     tracing::trace!("handle connect");
 
-    // todo: move to connect service in udp_tracker_core
-
-    let connection_id = make(gen_remote_fingerprint(&remote_addr), cookie_issue_time).expect("it should be a normal value");
-
-    if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
-        match remote_addr {
-            SocketAddr::V4(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp4Connect)
-                    .await;
-            }
-            SocketAddr::V6(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp6Connect)
-                    .await;
-            }
-        }
-    }
+    let connection_id =
+        udp_tracker_core::services::connect::handle_connect(remote_addr, opt_udp_stats_event_sender, cookie_issue_time).await;
 
     build_response(*request, connection_id)
 }
