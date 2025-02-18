@@ -14,10 +14,8 @@ use torrust_tracker_configuration::Core;
 use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
-use crate::packages::udp_tracker_core::connection_cookie::check;
 use crate::packages::udp_tracker_core::{self};
 use crate::servers::udp::error::Error;
-use crate::servers::udp::handlers::gen_remote_fingerprint;
 
 /// It handles the `Announce` request. Refer to [`Announce`](crate::servers::udp#announce)
 /// request for more information.
@@ -43,27 +41,16 @@ pub async fn handle_announce(
 
     tracing::trace!("handle announce");
 
-    // todo: move authentication to `udp_tracker_core::services::announce::handle_announce`
-
-    check(
-        &request.connection_id,
-        gen_remote_fingerprint(&remote_addr),
-        cookie_valid_range,
-    )
-    .map_err(|e| (e.into(), request.transaction_id))?;
-
     let response = udp_tracker_core::services::announce::handle_announce(
         remote_addr,
         request,
         announce_handler,
         whitelist_authorization,
         opt_udp_stats_event_sender,
+        cookie_valid_range,
     )
     .await
-    .map_err(|e| Error::TrackerError {
-        source: (Arc::new(e) as Arc<dyn std::error::Error + Send + Sync>).into(),
-    })
-    .map_err(|e| (e, request.transaction_id))?;
+    .map_err(|e| (e.into(), request.transaction_id))?;
 
     // todo: extract `build_response` function.
 
@@ -213,15 +200,15 @@ mod tests {
             use mockall::predicate::eq;
             use torrust_tracker_configuration::Core;
 
-            use crate::packages::udp_tracker_core::connection_cookie::make;
+            use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
             use crate::packages::{self, udp_tracker_core};
             use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
+            use crate::servers::udp::handlers::handle_announce;
             use crate::servers::udp::handlers::tests::{
                 initialize_core_tracker_services_for_default_tracker_configuration,
                 initialize_core_tracker_services_for_public_tracker, sample_cookie_valid_range, sample_ipv4_socket_address,
                 sample_issue_time, MockUdpStatsEventSender, TorrentPeerBuilder,
             };
-            use crate::servers::udp::handlers::{gen_remote_fingerprint, handle_announce};
 
             #[tokio::test]
             async fn an_announced_peer_should_be_added_to_the_tracker() {
@@ -447,13 +434,13 @@ mod tests {
 
                 use aquatic_udp_protocol::{InfoHash as AquaticInfoHash, PeerId as AquaticPeerId};
 
-                use crate::packages::udp_tracker_core::connection_cookie::make;
+                use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
                 use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
+                use crate::servers::udp::handlers::handle_announce;
                 use crate::servers::udp::handlers::tests::{
                     initialize_core_tracker_services_for_public_tracker, sample_cookie_valid_range, sample_issue_time,
                     TorrentPeerBuilder,
                 };
-                use crate::servers::udp::handlers::{gen_remote_fingerprint, handle_announce};
 
                 #[tokio::test]
                 async fn the_peer_ip_should_be_changed_to_the_external_ip_in_the_tracker_configuration_if_defined() {
@@ -520,15 +507,15 @@ mod tests {
             use mockall::predicate::eq;
             use torrust_tracker_configuration::Core;
 
-            use crate::packages::udp_tracker_core::connection_cookie::make;
+            use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
             use crate::packages::{self, udp_tracker_core};
             use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
+            use crate::servers::udp::handlers::handle_announce;
             use crate::servers::udp::handlers::tests::{
                 initialize_core_tracker_services_for_default_tracker_configuration,
                 initialize_core_tracker_services_for_public_tracker, sample_cookie_valid_range, sample_ipv6_remote_addr,
                 sample_issue_time, MockUdpStatsEventSender, TorrentPeerBuilder,
             };
-            use crate::servers::udp::handlers::{gen_remote_fingerprint, handle_announce};
 
             #[tokio::test]
             async fn an_announced_peer_should_be_added_to_the_tracker() {
@@ -776,12 +763,12 @@ mod tests {
                 use mockall::predicate::eq;
 
                 use crate::packages::udp_tracker_core;
-                use crate::packages::udp_tracker_core::connection_cookie::make;
+                use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
                 use crate::servers::udp::handlers::announce::tests::announce_request::AnnounceRequestBuilder;
+                use crate::servers::udp::handlers::handle_announce;
                 use crate::servers::udp::handlers::tests::{
                     sample_cookie_valid_range, sample_issue_time, MockUdpStatsEventSender, TrackerConfigurationBuilder,
                 };
-                use crate::servers::udp::handlers::{gen_remote_fingerprint, handle_announce};
 
                 #[tokio::test]
                 async fn the_peer_ip_should_be_changed_to_the_external_ip_in_the_tracker_configuration() {

@@ -11,9 +11,7 @@ use tracing::{instrument, Level};
 use zerocopy::network_endian::I32;
 
 use crate::packages::udp_tracker_core;
-use crate::packages::udp_tracker_core::connection_cookie::check;
 use crate::servers::udp::error::Error;
-use crate::servers::udp::handlers::gen_remote_fingerprint;
 
 /// It handles the `Scrape` request. Refer to [`Scrape`](crate::servers::udp#scrape)
 /// request for more information.
@@ -35,22 +33,15 @@ pub async fn handle_scrape(
 
     tracing::trace!("handle scrape");
 
-    // todo: move authentication to `udp_tracker_core::services::scrape::handle_scrape`
-
-    check(
-        &request.connection_id,
-        gen_remote_fingerprint(&remote_addr),
+    let scrape_data = udp_tracker_core::services::scrape::handle_scrape(
+        remote_addr,
+        request,
+        scrape_handler,
+        opt_udp_stats_event_sender,
         cookie_valid_range,
     )
+    .await
     .map_err(|e| (e.into(), request.transaction_id))?;
-
-    let scrape_data =
-        udp_tracker_core::services::scrape::handle_scrape(remote_addr, request, scrape_handler, opt_udp_stats_event_sender)
-            .await
-            .map_err(|e| Error::TrackerError {
-                source: (Arc::new(e) as Arc<dyn std::error::Error + Send + Sync>).into(),
-            })
-            .map_err(|e| (e, request.transaction_id))?;
 
     // todo: extract `build_response` function.
 
@@ -94,12 +85,12 @@ mod tests {
         use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
 
         use crate::packages;
-        use crate::packages::udp_tracker_core::connection_cookie::make;
+        use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
+        use crate::servers::udp::handlers::handle_scrape;
         use crate::servers::udp::handlers::tests::{
             initialize_core_tracker_services_for_public_tracker, sample_cookie_valid_range, sample_ipv4_remote_addr,
             sample_issue_time, TorrentPeerBuilder,
         };
-        use crate::servers::udp::handlers::{gen_remote_fingerprint, handle_scrape};
 
         fn zeroed_torrent_statistics() -> TorrentScrapeStatistics {
             TorrentScrapeStatistics {

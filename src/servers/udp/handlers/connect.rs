@@ -6,8 +6,7 @@ use aquatic_udp_protocol::{ConnectRequest, ConnectResponse, Response};
 use tracing::{instrument, Level};
 
 use crate::packages::udp_tracker_core;
-use crate::packages::udp_tracker_core::connection_cookie::make;
-use crate::servers::udp::handlers::gen_remote_fingerprint;
+use crate::packages::udp_tracker_core::connection_cookie::{gen_remote_fingerprint, make};
 
 /// It handles the `Connect` request. Refer to [`Connect`](crate::servers::udp#connect)
 /// request for more information.

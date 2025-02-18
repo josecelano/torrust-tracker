@@ -4,7 +4,6 @@ pub mod connect;
 pub mod error;
 pub mod scrape;
 
-use std::hash::{DefaultHasher, Hash, Hasher as _};
 use std::net::SocketAddr;
 use std::ops::Range;
 use std::sync::Arc;
@@ -21,6 +20,7 @@ use uuid::Uuid;
 
 use super::RawRequest;
 use crate::container::UdpTrackerContainer;
+use crate::packages::udp_tracker_core::services::announce::UdpAnnounceError;
 use crate::servers::udp::error::Error;
 use crate::shared::bit_torrent::common::MAX_SCRAPE_TORRENTS;
 use crate::CurrentClock;
@@ -77,8 +77,11 @@ pub(crate) async fn handle_packet(
             .await
             {
                 Ok(response) => return response,
-                Err((e, transaction_id)) => {
-                    if let Error::ConnectionCookieError { .. } = &e {
+                Err((error, transaction_id)) => {
+                    if let Error::UdpAnnounceError {
+                        source: UdpAnnounceError::ConnectionCookieError { .. },
+                    } = error
+                    {
                         // code-review: should we include `RequestParseError` and `BadRequest`?
                         let mut ban_service = udp_tracker_container.ban_service.write().await;
                         ban_service.increase_counter(&udp_request.from.ip());
@@ -90,7 +93,7 @@ pub(crate) async fn handle_packet(
                         request_id,
                         &udp_tracker_container.udp_stats_event_sender,
                         cookie_time_values.valid_range.clone(),
-                        &e,
+                        &error,
                         Some(transaction_id),
                     )
                     .await
@@ -163,13 +166,6 @@ pub async fn handle_request(
     }
 }
 
-#[must_use]
-pub(crate) fn gen_remote_fingerprint(remote_addr: &SocketAddr) -> u64 {
-    let mut state = DefaultHasher::new();
-    remote_addr.hash(&mut state);
-    state.finish()
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
 
@@ -194,8 +190,8 @@ pub(crate) mod tests {
     use torrust_tracker_primitives::{peer, DurationSinceUnixEpoch};
     use torrust_tracker_test_helpers::configuration;
 
-    use super::gen_remote_fingerprint;
     use crate::packages::udp_tracker_core;
+    use crate::packages::udp_tracker_core::connection_cookie::gen_remote_fingerprint;
     use crate::{packages, CurrentClock};
 
     pub(crate) struct CoreTrackerServices {

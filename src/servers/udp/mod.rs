@@ -105,7 +105,7 @@
 //! connection ID = hash(client IP + current time slot + secret seed)
 //! ```
 //!
-//! The BEP-15 recommends a two-minute time slot. Refer to [`connection_cookie`]
+//! The BEP-15 recommends a two-minute time slot. Refer to [`connection_cookie`](crate::packages::udp_tracker_core::connection_cookie)
 //! for more information about the connection ID generation with this method.
 //!
 //! #### Connect Request

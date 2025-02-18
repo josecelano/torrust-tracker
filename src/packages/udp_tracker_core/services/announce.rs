@@ -8,18 +8,56 @@
 //! It also sends an [`udp_tracker_core::statistics::event::Event`]
 //! because events are specific for the HTTP tracker.
 use std::net::{IpAddr, SocketAddr};
+use std::ops::Range;
 use std::sync::Arc;
 
 use aquatic_udp_protocol::AnnounceRequest;
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
-use bittorrent_tracker_core::error::AnnounceError;
+use bittorrent_tracker_core::error::{AnnounceError, WhitelistError};
 use bittorrent_tracker_core::whitelist;
 use bittorrent_udp_protocol::peer_builder;
 use torrust_tracker_primitives::core::AnnounceData;
 use torrust_tracker_primitives::peer;
 
+use crate::packages::udp_tracker_core::connection_cookie::{check, gen_remote_fingerprint, ConnectionCookieError};
 use crate::packages::udp_tracker_core::{self};
+
+/// Errors related to announce requests.
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum UdpAnnounceError {
+    /// Error returned when there was an error with the connection cookie.
+    #[error("Connection cookie error: {source}")]
+    ConnectionCookieError { source: ConnectionCookieError },
+
+    /// Error returned when there was an error with the tracker core announce handler.
+    #[error("Tracker core announce error: {source}")]
+    TrackerCoreAnnounceError { source: AnnounceError },
+
+    /// Error returned when there was an error with the tracker core whitelist.
+    #[error("Tracker core whitelist error: {source}")]
+    TrackerCoreWhitelistError { source: WhitelistError },
+}
+
+impl From<ConnectionCookieError> for UdpAnnounceError {
+    fn from(connection_cookie_error: ConnectionCookieError) -> Self {
+        Self::ConnectionCookieError {
+            source: connection_cookie_error,
+        }
+    }
+}
+
+impl From<AnnounceError> for UdpAnnounceError {
+    fn from(announce_error: AnnounceError) -> Self {
+        Self::TrackerCoreAnnounceError { source: announce_error }
+    }
+}
+
+impl From<WhitelistError> for UdpAnnounceError {
+    fn from(whitelist_error: WhitelistError) -> Self {
+        Self::TrackerCoreWhitelistError { source: whitelist_error }
+    }
+}
 
 /// It handles the `Announce` request.
 ///
@@ -36,7 +74,17 @@ pub async fn handle_announce(
     announce_handler: &Arc<AnnounceHandler>,
     whitelist_authorization: &Arc<whitelist::authorization::WhitelistAuthorization>,
     opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
-) -> Result<AnnounceData, AnnounceError> {
+    cookie_valid_range: Range<f64>,
+) -> Result<AnnounceData, UdpAnnounceError> {
+    // todo: return a UDP response like the HTTP tracker instead of raw AnnounceData.
+
+    // Authentication
+    check(
+        &request.connection_id,
+        gen_remote_fingerprint(&remote_addr),
+        cookie_valid_range,
+    )?;
+
     let info_hash = request.info_hash.into();
     let remote_client_ip = remote_addr.ip();
 

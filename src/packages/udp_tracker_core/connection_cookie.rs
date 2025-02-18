@@ -86,7 +86,7 @@ use zerocopy::AsBytes;
 use crate::shared::crypto::keys::CipherArrayBlowfish;
 
 /// Error returned when there was an error with the connection cookie.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum ConnectionCookieError {
     #[error("cookie value is not normal: {not_normal_value}")]
     ValueNotNormal { not_normal_value: f64 },
@@ -123,6 +123,8 @@ pub fn make(fingerprint: u64, issue_at: f64) -> Result<Cookie, ConnectionCookieE
     Ok(zerocopy::FromBytes::read_from(cookie.as_slice()).expect("it should be the same size"))
 }
 
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::net::SocketAddr;
 use std::ops::Range;
 
 /// Checks if the supplied `connection_cookie` is valid.
@@ -164,6 +166,13 @@ pub fn check(cookie: &Cookie, fingerprint: u64, valid_range: Range<f64>) -> Resu
     }
 
     Ok(issue_time)
+}
+
+#[must_use]
+pub(crate) fn gen_remote_fingerprint(remote_addr: &SocketAddr) -> u64 {
+    let mut state = DefaultHasher::new();
+    remote_addr.hash(&mut state);
+    state.finish()
 }
 
 mod cookie_builder {
