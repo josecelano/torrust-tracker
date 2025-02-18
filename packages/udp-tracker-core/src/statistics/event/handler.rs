@@ -1,5 +1,5 @@
-use crate::packages::udp_tracker_core::statistics::event::{Event, UdpResponseKind};
-use crate::packages::udp_tracker_core::statistics::repository::Repository;
+use crate::statistics::event::{Event, UdpResponseKind};
+use crate::statistics::repository::Repository;
 
 pub async fn handle_event(event: Event, stats_repository: &Repository) {
     match event {
@@ -82,9 +82,9 @@ pub async fn handle_event(event: Event, stats_repository: &Repository) {
 
 #[cfg(test)]
 mod tests {
-    use crate::packages::udp_tracker_core::statistics::event::handler::handle_event;
-    use crate::packages::udp_tracker_core::statistics::event::Event;
-    use crate::packages::udp_tracker_core::statistics::repository::Repository;
+    use crate::statistics::event::handler::handle_event;
+    use crate::statistics::event::Event;
+    use crate::statistics::repository::Repository;
 
     #[tokio::test]
     async fn should_increase_the_udp4_connections_counter_when_it_receives_a_udp4_connect_event() {
@@ -186,7 +186,7 @@ mod tests {
 
         handle_event(
             Event::Udp4Response {
-                kind: crate::packages::udp_tracker_core::statistics::event::UdpResponseKind::Announce,
+                kind: crate::statistics::event::UdpResponseKind::Announce,
                 req_processing_time: std::time::Duration::from_secs(1),
             },
             &stats_repository,
@@ -226,7 +226,7 @@ mod tests {
 
         handle_event(
             Event::Udp6Response {
-                kind: crate::packages::udp_tracker_core::statistics::event::UdpResponseKind::Announce,
+                kind: crate::statistics::event::UdpResponseKind::Announce,
                 req_processing_time: std::time::Duration::from_secs(1),
             },
             &stats_repository,

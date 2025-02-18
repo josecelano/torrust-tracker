@@ -8,6 +8,7 @@
 //! > for the configuration options.
 use std::sync::Arc;
 
+use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use tokio::task::JoinHandle;
 use tracing::instrument;
 
@@ -15,7 +16,6 @@ use crate::container::UdpTrackerContainer;
 use crate::servers::registar::ServiceRegistrationForm;
 use crate::servers::udp::server::spawner::Spawner;
 use crate::servers::udp::server::Server;
-use crate::servers::udp::UDP_TRACKER_LOG_TARGET;
 
 /// It starts a new UDP server with the provided configuration.
 ///

@@ -43,12 +43,9 @@ bittorrent-http-protocol = { version = "3.0.0-develop", path = "packages/http-pr
 bittorrent-primitives = "0.1.0"
 bittorrent-tracker-client = { version = "3.0.0-develop", path = "packages/tracker-client" }
 bittorrent-tracker-core = { version = "3.0.0-develop", path = "packages/tracker-core" }
-bittorrent-udp-protocol = { version = "3.0.0-develop", path = "packages/udp-protocol" }
-bloom = "0.3.2"
-blowfish = "0"
+bittorrent-udp-tracker-core = { version = "3.0.0-develop", path = "packages/udp-tracker-core" }
 camino = { version = "1", features = ["serde", "serde1"] }
 chrono = { version = "0", default-features = false, features = ["clock"] }
-cipher = "0"
 clap = { version = "4", features = ["derive", "env"] }
 crossbeam-skiplist = "0"
 dashmap = "6"

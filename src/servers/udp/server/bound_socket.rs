@@ -2,9 +2,8 @@ use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::ops::Deref;
 
+use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use url::Url;
-
-use crate::servers::udp::UDP_TRACKER_LOG_TARGET;
 
 /// Wrapper for Tokio [`UdpSocket`][`tokio::net::UdpSocket`] that is bound to a particular socket.
 pub struct BoundSocket {

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
+use bittorrent_udp_tracker_core::services::banning::BanService;
+use bittorrent_udp_tracker_core::{self, statistics};
 use packages::tracker_api_core::statistics::metrics::Metrics;
 use tokio::sync::RwLock;
 use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
 
-use crate::packages::udp_tracker_core::services::banning::BanService;
-use crate::packages::udp_tracker_core::{self};
 use crate::packages::{self, http_tracker_core};
 
 /// All the metrics collected by the tracker.
@@ -28,7 +28,7 @@ pub async fn get_metrics(
     in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
     ban_service: Arc<RwLock<BanService>>,
     http_stats_repository: Arc<http_tracker_core::statistics::repository::Repository>,
-    udp_stats_repository: Arc<udp_tracker_core::statistics::repository::Repository>,
+    udp_stats_repository: Arc<statistics::repository::Repository>,
 ) -> TrackerMetrics {
     let torrents_metrics = in_memory_torrent_repository.get_torrents_metrics();
     let udp_banned_ips_total = ban_service.read().await.get_banned_ips_total();
@@ -77,16 +77,16 @@ mod tests {
 
     use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
     use bittorrent_tracker_core::{self};
+    use bittorrent_udp_tracker_core::services::banning::BanService;
+    use bittorrent_udp_tracker_core::MAX_CONNECTION_ID_ERRORS_PER_IP;
     use tokio::sync::RwLock;
     use torrust_tracker_configuration::Configuration;
     use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
     use torrust_tracker_test_helpers::configuration;
 
+    use crate::packages::http_tracker_core;
     use crate::packages::tracker_api_core::statistics::metrics::Metrics;
     use crate::packages::tracker_api_core::statistics::services::{get_metrics, TrackerMetrics};
-    use crate::packages::udp_tracker_core::services::banning::BanService;
-    use crate::packages::{http_tracker_core, udp_tracker_core};
-    use crate::servers::udp::server::launcher::MAX_CONNECTION_ID_ERRORS_PER_IP;
 
     pub fn tracker_configuration() -> Configuration {
         configuration::ephemeral()
@@ -106,7 +106,7 @@ mod tests {
 
         // UDP stats
         let (_udp_stats_event_sender, udp_stats_repository) =
-            udp_tracker_core::statistics::setup::factory(config.core.tracker_usage_statistics);
+            bittorrent_udp_tracker_core::statistics::setup::factory(config.core.tracker_usage_statistics);
         let udp_stats_repository = Arc::new(udp_stats_repository);
 
         let tracker_metrics = get_metrics(

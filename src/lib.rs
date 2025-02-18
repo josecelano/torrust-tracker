@@ -498,9 +498,6 @@ pub mod packages;
 pub mod servers;
 pub mod shared;
 
-#[macro_use]
-extern crate lazy_static;
-
 /// This code needs to be copied into each crate.
 /// Working version, for production.
 #[cfg(not(test))]

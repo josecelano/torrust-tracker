@@ -51,9 +51,9 @@ impl Keeper {
 
 #[cfg(test)]
 mod tests {
-    use crate::packages::udp_tracker_core::statistics::event::Event;
-    use crate::packages::udp_tracker_core::statistics::keeper::Keeper;
-    use crate::packages::udp_tracker_core::statistics::metrics::Metrics;
+    use crate::statistics::event::Event;
+    use crate::statistics::keeper::Keeper;
+    use crate::statistics::metrics::Metrics;
 
     #[tokio::test]
     async fn should_contain_the_tracker_statistics() {

@@ -20,8 +20,8 @@ use bittorrent_udp_protocol::peer_builder;
 use torrust_tracker_primitives::core::AnnounceData;
 use torrust_tracker_primitives::peer;
 
-use crate::packages::udp_tracker_core::connection_cookie::{check, gen_remote_fingerprint, ConnectionCookieError};
-use crate::packages::udp_tracker_core::{self};
+use crate::connection_cookie::{check, gen_remote_fingerprint, ConnectionCookieError};
+use crate::statistics;
 
 /// Errors related to announce requests.
 #[derive(thiserror::Error, Debug, Clone)]
@@ -73,7 +73,7 @@ pub async fn handle_announce(
     request: &AnnounceRequest,
     announce_handler: &Arc<AnnounceHandler>,
     whitelist_authorization: &Arc<whitelist::authorization::WhitelistAuthorization>,
-    opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    opt_udp_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     cookie_valid_range: Range<f64>,
 ) -> Result<AnnounceData, UdpAnnounceError> {
     // todo: return a UDP response like the HTTP tracker instead of raw AnnounceData.
@@ -105,12 +105,12 @@ pub async fn handle_announce(
         match original_peer_ip {
             IpAddr::V4(_) => {
                 udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp4Announce)
+                    .send_event(statistics::event::Event::Udp4Announce)
                     .await;
             }
             IpAddr::V6(_) => {
                 udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp6Announce)
+                    .send_event(statistics::event::Event::Udp6Announce)
                     .await;
             }
         }
@@ -124,7 +124,7 @@ pub async fn handle_announce(
 /// It will return an error if the announce request fails.
 pub async fn invoke(
     announce_handler: Arc<AnnounceHandler>,
-    opt_udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    opt_udp_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     info_hash: InfoHash,
     peer: &mut peer::Peer,
     peers_wanted: &PeersWanted,
@@ -140,12 +140,12 @@ pub async fn invoke(
         match original_peer_ip {
             IpAddr::V4(_) => {
                 udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp4Announce)
+                    .send_event(statistics::event::Event::Udp4Announce)
                     .await;
             }
             IpAddr::V6(_) => {
                 udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp6Announce)
+                    .send_event(statistics::event::Event::Udp6Announce)
                     .await;
             }
         }

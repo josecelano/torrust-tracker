@@ -11,12 +11,12 @@ use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentT
 use bittorrent_tracker_core::whitelist;
 use bittorrent_tracker_core::whitelist::manager::WhitelistManager;
 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
+use bittorrent_udp_tracker_core::services::banning::BanService;
+use bittorrent_udp_tracker_core::{self};
 use tokio::sync::RwLock;
 use torrust_tracker_configuration::{Core, HttpApi, HttpTracker, UdpTracker};
 
 use crate::packages::http_tracker_core;
-use crate::packages::udp_tracker_core::services::banning::BanService;
-use crate::packages::udp_tracker_core::{self};
 
 pub struct AppContainer {
     pub core_config: Arc<Core>,
@@ -29,9 +29,9 @@ pub struct AppContainer {
     pub whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
     pub ban_service: Arc<RwLock<BanService>>,
     pub http_stats_event_sender: Arc<Option<Box<dyn http_tracker_core::statistics::event::sender::Sender>>>,
-    pub udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    pub udp_stats_event_sender: Arc<Option<Box<dyn bittorrent_udp_tracker_core::statistics::event::sender::Sender>>>,
     pub http_stats_repository: Arc<http_tracker_core::statistics::repository::Repository>,
-    pub udp_stats_repository: Arc<udp_tracker_core::statistics::repository::Repository>,
+    pub udp_stats_repository: Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
     pub whitelist_manager: Arc<WhitelistManager>,
     pub in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
     pub db_torrent_repository: Arc<DatabasePersistentTorrentRepository>,
@@ -44,7 +44,7 @@ pub struct UdpTrackerContainer {
     pub announce_handler: Arc<AnnounceHandler>,
     pub scrape_handler: Arc<ScrapeHandler>,
     pub whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
-    pub udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    pub udp_stats_event_sender: Arc<Option<Box<dyn bittorrent_udp_tracker_core::statistics::event::sender::Sender>>>,
     pub ban_service: Arc<RwLock<BanService>>,
 }
 
@@ -96,7 +96,7 @@ pub struct HttpApiContainer {
     pub whitelist_manager: Arc<WhitelistManager>,
     pub ban_service: Arc<RwLock<BanService>>,
     pub http_stats_repository: Arc<http_tracker_core::statistics::repository::Repository>,
-    pub udp_stats_repository: Arc<udp_tracker_core::statistics::repository::Repository>,
+    pub udp_stats_repository: Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
 }
 
 impl HttpApiContainer {

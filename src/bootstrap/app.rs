@@ -26,6 +26,10 @@ use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentT
 use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
 use bittorrent_tracker_core::whitelist::setup::initialize_whitelist_manager;
+use bittorrent_udp_tracker_core::crypto::ephemeral_instance_keys;
+use bittorrent_udp_tracker_core::crypto::keys::{self, Keeper as _};
+use bittorrent_udp_tracker_core::services::banning::BanService;
+use bittorrent_udp_tracker_core::MAX_CONNECTION_ID_ERRORS_PER_IP;
 use tokio::sync::RwLock;
 use torrust_tracker_clock::static_time;
 use torrust_tracker_configuration::validator::Validator;
@@ -35,11 +39,7 @@ use tracing::instrument;
 use super::config::initialize_configuration;
 use crate::bootstrap;
 use crate::container::AppContainer;
-use crate::packages::udp_tracker_core::services::banning::BanService;
-use crate::packages::{http_tracker_core, udp_tracker_core};
-use crate::servers::udp::server::launcher::MAX_CONNECTION_ID_ERRORS_PER_IP;
-use crate::shared::crypto::ephemeral_instance_keys;
-use crate::shared::crypto::keys::{self, Keeper as _};
+use crate::packages::http_tracker_core;
 
 /// It loads the configuration from the environment and builds app container.
 ///
@@ -99,7 +99,7 @@ pub fn initialize_app_container(configuration: &Configuration) -> AppContainer {
 
     // UDP stats
     let (udp_stats_event_sender, udp_stats_repository) =
-        udp_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
+        bittorrent_udp_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
     let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
     let udp_stats_repository = Arc::new(udp_stats_repository);
 

@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use derive_more::derive::Display;
 use derive_more::Constructor;
 use tokio::task::JoinHandle;
@@ -15,7 +16,6 @@ use crate::container::UdpTrackerContainer;
 use crate::servers::registar::{ServiceRegistration, ServiceRegistrationForm};
 use crate::servers::signals::Halted;
 use crate::servers::udp::server::launcher::Launcher;
-use crate::servers::udp::UDP_TRACKER_LOG_TARGET;
 
 /// A UDP server instance controller with no UDP instance running.
 #[allow(clippy::module_name_repetitions)]

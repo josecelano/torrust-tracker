@@ -17,8 +17,8 @@ use bittorrent_tracker_core::error::{ScrapeError, WhitelistError};
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use torrust_tracker_primitives::core::ScrapeData;
 
-use crate::packages::udp_tracker_core;
-use crate::packages::udp_tracker_core::connection_cookie::{check, gen_remote_fingerprint, ConnectionCookieError};
+use crate::connection_cookie::{check, gen_remote_fingerprint, ConnectionCookieError};
+use crate::statistics;
 
 /// Errors related to scrape requests.
 #[derive(thiserror::Error, Debug, Clone)]
@@ -65,7 +65,7 @@ pub async fn handle_scrape(
     remote_addr: SocketAddr,
     request: &ScrapeRequest,
     scrape_handler: &Arc<ScrapeHandler>,
-    opt_udp_stats_event_sender: &Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+    opt_udp_stats_event_sender: &Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     cookie_valid_range: Range<f64>,
 ) -> Result<ScrapeData, UdpScrapeError> {
     // todo: return a UDP response like the HTTP tracker instead of raw ScrapeData.
@@ -84,14 +84,10 @@ pub async fn handle_scrape(
     if let Some(udp_stats_event_sender) = opt_udp_stats_event_sender.as_deref() {
         match remote_addr {
             SocketAddr::V4(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp4Scrape)
-                    .await;
+                udp_stats_event_sender.send_event(statistics::event::Event::Udp4Scrape).await;
             }
             SocketAddr::V6(_) => {
-                udp_stats_event_sender
-                    .send_event(udp_tracker_core::statistics::event::Event::Udp6Scrape)
-                    .await;
+                udp_stats_event_sender.send_event(statistics::event::Event::Udp6Scrape).await;
             }
         }
     }

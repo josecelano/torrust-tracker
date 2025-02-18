@@ -13,10 +13,10 @@ pub trait Sender: Sync + Send {
     fn send_event(&self, event: Event) -> BoxFuture<'_, Option<Result<(), SendError<Event>>>>;
 }
 
-/// An [`statistics::EventSender`](crate::packages::udp_tracker_core::statistics::event::sender::Sender) implementation.
+/// An [`statistics::EventSender`](crate::statistics::event::sender::Sender) implementation.
 ///
 /// It uses a channel sender to send the statistic events. The channel is created by a
-/// [`statistics::Keeper`](crate::packages::udp_tracker_core::statistics::keeper::Keeper)
+/// [`statistics::Keeper`](crate::statistics::keeper::Keeper)
 #[allow(clippy::module_name_repetitions)]
 pub struct ChannelSender {
     pub(crate) sender: mpsc::Sender<Event>,

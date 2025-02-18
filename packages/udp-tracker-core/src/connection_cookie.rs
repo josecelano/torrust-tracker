@@ -83,7 +83,7 @@ use thiserror::Error;
 use tracing::instrument;
 use zerocopy::AsBytes;
 
-use crate::shared::crypto::keys::CipherArrayBlowfish;
+use crate::crypto::keys::CipherArrayBlowfish;
 
 /// Error returned when there was an error with the connection cookie.
 #[derive(Error, Debug, Clone)]
@@ -169,7 +169,7 @@ pub fn check(cookie: &Cookie, fingerprint: u64, valid_range: Range<f64>) -> Resu
 }
 
 #[must_use]
-pub(crate) fn gen_remote_fingerprint(remote_addr: &SocketAddr) -> u64 {
+pub fn gen_remote_fingerprint(remote_addr: &SocketAddr) -> u64 {
     let mut state = DefaultHasher::new();
     remote_addr.hash(&mut state);
     state.finish()
@@ -183,7 +183,7 @@ mod cookie_builder {
     pub type CookiePlainText = CipherArrayBlowfish;
     pub type CookieCipherText = CipherArrayBlowfish;
 
-    use crate::shared::crypto::keys::{CipherArrayBlowfish, Current, Keeper};
+    use crate::crypto::keys::{CipherArrayBlowfish, Current, Keeper};
 
     #[instrument()]
     pub(super) fn assemble(fingerprint: u64, issue_at: f64) -> CookiePlainText {

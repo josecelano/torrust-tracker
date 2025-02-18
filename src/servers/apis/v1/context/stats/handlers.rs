@@ -6,13 +6,13 @@ use axum::extract::State;
 use axum::response::Response;
 use axum_extra::extract::Query;
 use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
+use bittorrent_udp_tracker_core::services::banning::BanService;
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
 use super::responses::{metrics_response, stats_response};
+use crate::packages::http_tracker_core;
 use crate::packages::tracker_api_core::statistics::services::get_metrics;
-use crate::packages::udp_tracker_core::services::banning::BanService;
-use crate::packages::{http_tracker_core, udp_tracker_core};
 
 #[derive(Deserialize, Debug, Default)]
 #[serde(rename_all = "lowercase")]
@@ -44,7 +44,7 @@ pub async fn get_stats_handler(
         Arc<InMemoryTorrentRepository>,
         Arc<RwLock<BanService>>,
         Arc<http_tracker_core::statistics::repository::Repository>,
-        Arc<udp_tracker_core::statistics::repository::Repository>,
+        Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
     )>,
     params: Query<QueryParams>,
 ) -> Response {

@@ -11,6 +11,7 @@ use std::time::Instant;
 
 use announce::handle_announce;
 use aquatic_udp_protocol::{Request, Response, TransactionId};
+use bittorrent_udp_tracker_core::services::announce::UdpAnnounceError;
 use connect::handle_connect;
 use error::handle_error;
 use scrape::handle_scrape;
@@ -20,7 +21,6 @@ use uuid::Uuid;
 
 use super::RawRequest;
 use crate::container::UdpTrackerContainer;
-use crate::packages::udp_tracker_core::services::announce::UdpAnnounceError;
 use crate::servers::udp::error::Error;
 use crate::shared::bit_torrent::common::MAX_SCRAPE_TORRENTS;
 use crate::CurrentClock;
@@ -182,6 +182,8 @@ pub(crate) mod tests {
     use bittorrent_tracker_core::whitelist;
     use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
     use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
+    use bittorrent_udp_tracker_core::connection_cookie::gen_remote_fingerprint;
+    use bittorrent_udp_tracker_core::{self, statistics};
     use futures::future::BoxFuture;
     use mockall::mock;
     use tokio::sync::mpsc::error::SendError;
@@ -190,9 +192,7 @@ pub(crate) mod tests {
     use torrust_tracker_primitives::{peer, DurationSinceUnixEpoch};
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::packages::udp_tracker_core;
-    use crate::packages::udp_tracker_core::connection_cookie::gen_remote_fingerprint;
-    use crate::{packages, CurrentClock};
+    use crate::CurrentClock;
 
     pub(crate) struct CoreTrackerServices {
         pub core_config: Arc<Core>,
@@ -204,7 +204,7 @@ pub(crate) mod tests {
     }
 
     pub(crate) struct CoreUdpTrackerServices {
-        pub udp_stats_event_sender: Arc<Option<Box<dyn udp_tracker_core::statistics::event::sender::Sender>>>,
+        pub udp_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     }
 
     fn default_testing_tracker_configuration() -> Configuration {
@@ -239,7 +239,7 @@ pub(crate) mod tests {
         ));
         let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
 
-        let (udp_stats_event_sender, _udp_stats_repository) = packages::udp_tracker_core::statistics::setup::factory(false);
+        let (udp_stats_event_sender, _udp_stats_repository) = bittorrent_udp_tracker_core::statistics::setup::factory(false);
         let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
 
         (
@@ -357,8 +357,8 @@ pub(crate) mod tests {
 
     mock! {
         pub(crate) UdpStatsEventSender {}
-        impl udp_tracker_core::statistics::event::sender::Sender for UdpStatsEventSender {
-             fn send_event(&self, event: udp_tracker_core::statistics::event::Event) -> BoxFuture<'static,Option<Result<(),SendError<udp_tracker_core::statistics::event::Event> > > > ;
+        impl statistics::event::sender::Sender for UdpStatsEventSender {
+             fn send_event(&self, event: statistics::event::Event) -> BoxFuture<'static,Option<Result<(),SendError<statistics::event::Event> > > > ;
         }
     }
 }
