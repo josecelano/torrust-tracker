@@ -1,4 +1,5 @@
 pub mod announce;
+pub mod banning;
 pub mod connect;
 pub mod scrape;
 

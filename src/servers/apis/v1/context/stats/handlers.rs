@@ -11,8 +11,8 @@ use tokio::sync::RwLock;
 
 use super::responses::{metrics_response, stats_response};
 use crate::packages::tracker_api_core::statistics::services::get_metrics;
+use crate::packages::udp_tracker_core::services::banning::BanService;
 use crate::packages::{http_tracker_core, udp_tracker_core};
-use crate::servers::udp::server::banning::BanService;
 
 #[derive(Deserialize, Debug, Default)]
 #[serde(rename_all = "lowercase")]

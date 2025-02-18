@@ -45,7 +45,7 @@ use tokio::sync::RwLock;
 use torrust_tracker_primitives::torrent_metrics::TorrentsMetrics;
 
 use crate::packages;
-use crate::servers::udp::server::banning::BanService;
+use crate::packages::udp_tracker_core::services::banning::BanService;
 
 /// All the metrics collected by the tracker.
 #[derive(Debug, PartialEq)]
@@ -111,9 +111,9 @@ mod tests {
     use torrust_tracker_test_helpers::configuration;
 
     use crate::packages::udp_tracker_core;
+    use crate::packages::udp_tracker_core::services::banning::BanService;
     use crate::packages::udp_tracker_core::statistics;
     use crate::packages::udp_tracker_core::statistics::services::{get_metrics, TrackerMetrics};
-    use crate::servers::udp::server::banning::BanService;
     use crate::servers::udp::server::launcher::MAX_CONNECTION_ID_ERRORS_PER_IP;
 
     pub fn tracker_configuration() -> Configuration {

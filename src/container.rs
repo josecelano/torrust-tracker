@@ -14,8 +14,9 @@ use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist
 use tokio::sync::RwLock;
 use torrust_tracker_configuration::{Core, HttpApi, HttpTracker, UdpTracker};
 
-use crate::packages::{http_tracker_core, udp_tracker_core};
-use crate::servers::udp::server::banning::BanService;
+use crate::packages::http_tracker_core;
+use crate::packages::udp_tracker_core::services::banning::BanService;
+use crate::packages::udp_tracker_core::{self};
 
 pub struct AppContainer {
     pub core_config: Arc<Core>,
