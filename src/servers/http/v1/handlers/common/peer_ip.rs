@@ -2,15 +2,15 @@
 //!
 //! The HTTP tracker may fail to resolve the peer IP address. This module
 //! contains the logic to convert those
-//! [`PeerIpResolutionError`](bittorrent_http_protocol::v1::services::peer_ip_resolver::PeerIpResolutionError)
+//! [`PeerIpResolutionError`](bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::PeerIpResolutionError)
 //! errors into responses.
 
 #[cfg(test)]
 mod tests {
     use std::panic::Location;
 
-    use bittorrent_http_protocol::v1::responses;
-    use bittorrent_http_protocol::v1::services::peer_ip_resolver::PeerIpResolutionError;
+    use bittorrent_http_tracker_protocol::v1::responses;
+    use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::PeerIpResolutionError;
 
     fn assert_error_response(error: &responses::error::Error, error_message: &str) {
         assert!(

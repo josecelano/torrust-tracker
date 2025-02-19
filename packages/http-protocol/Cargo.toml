@@ -1,7 +1,7 @@
 [package]
 description = "A library with the primitive types and functions for the BitTorrent HTTP tracker protocol."
 keywords = ["api", "library", "primitives"]
-name = "bittorrent-http-protocol"
+name = "bittorrent-http-tracker-protocol"
 readme = "README.md"
 
 authors.workspace = true

@@ -63,7 +63,7 @@ pub enum PeerIpResolutionError {
 /// use std::net::IpAddr;
 /// use std::str::FromStr;
 ///
-/// use bittorrent_http_protocol::v1::services::peer_ip_resolver::{invoke, ClientIpSources, PeerIpResolutionError};
+/// use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::{invoke, ClientIpSources, PeerIpResolutionError};
 ///
 /// let on_reverse_proxy = true;
 ///
@@ -85,7 +85,7 @@ pub enum PeerIpResolutionError {
 /// use std::net::IpAddr;
 /// use std::str::FromStr;
 ///
-/// use bittorrent_http_protocol::v1::services::peer_ip_resolver::{invoke, ClientIpSources, PeerIpResolutionError};
+/// use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::{invoke, ClientIpSources, PeerIpResolutionError};
 ///
 /// let on_reverse_proxy = false;
 ///

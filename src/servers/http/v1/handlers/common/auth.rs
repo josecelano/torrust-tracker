@@ -3,7 +3,7 @@
 //! response.
 use std::panic::Location;
 
-use bittorrent_http_protocol::v1::responses;
+use bittorrent_http_tracker_protocol::v1::responses;
 use bittorrent_tracker_core::authentication;
 use thiserror::Error;
 

@@ -548,7 +548,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f68f53c83ab957f72c32642f3868eec03eb974d1fb82e453128456482613d36"
 
 [[package]]
-name = "bittorrent-http-protocol"
+name = "bittorrent-http-tracker-core"
+version = "3.0.0-develop"
+dependencies = [
+ "aquatic_udp_protocol",
+ "bittorrent-http-tracker-protocol",
+ "bittorrent-primitives",
+ "bittorrent-tracker-core",
+ "futures",
+ "mockall",
+ "tokio",
+ "torrust-tracker-configuration",
+ "torrust-tracker-primitives",
+ "torrust-tracker-test-helpers",
+ "tracing",
+]
+
+[[package]]
+name = "bittorrent-http-tracker-protocol"
 version = "3.0.0-develop"
 dependencies = [
  "aquatic_udp_protocol",
@@ -565,23 +582,6 @@ dependencies = [
  "torrust-tracker-contrib-bencode",
  "torrust-tracker-located-error",
  "torrust-tracker-primitives",
-]
-
-[[package]]
-name = "bittorrent-http-tracker-core"
-version = "3.0.0-develop"
-dependencies = [
- "aquatic_udp_protocol",
- "bittorrent-http-protocol",
- "bittorrent-primitives",
- "bittorrent-tracker-core",
- "futures",
- "mockall",
- "tokio",
- "torrust-tracker-configuration",
- "torrust-tracker-primitives",
- "torrust-tracker-test-helpers",
- "tracing",
 ]
 
 [[package]]
@@ -652,22 +652,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "bittorrent-udp-protocol"
-version = "3.0.0-develop"
-dependencies = [
- "aquatic_udp_protocol",
- "torrust-tracker-clock",
- "torrust-tracker-primitives",
-]
-
-[[package]]
 name = "bittorrent-udp-tracker-core"
 version = "3.0.0-develop"
 dependencies = [
  "aquatic_udp_protocol",
  "bittorrent-primitives",
  "bittorrent-tracker-core",
- "bittorrent-udp-protocol",
+ "bittorrent-udp-tracker-protocol",
  "bloom",
  "blowfish",
  "cipher",
@@ -682,6 +673,15 @@ dependencies = [
  "torrust-tracker-test-helpers",
  "tracing",
  "zerocopy 0.7.35",
+]
+
+[[package]]
+name = "bittorrent-udp-tracker-protocol"
+version = "3.0.0-develop"
+dependencies = [
+ "aquatic_udp_protocol",
+ "torrust-tracker-clock",
+ "torrust-tracker-primitives",
 ]
 
 [[package]]
@@ -4347,8 +4347,8 @@ dependencies = [
  "axum-client-ip",
  "axum-extra",
  "axum-server",
- "bittorrent-http-protocol",
  "bittorrent-http-tracker-core",
+ "bittorrent-http-tracker-protocol",
  "bittorrent-primitives",
  "bittorrent-tracker-client",
  "bittorrent-tracker-core",

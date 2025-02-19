@@ -4,10 +4,10 @@
 //! It parses the query parameters returning an [`Announce`]
 //! request.
 //!
-//! Refer to [`Announce`](bittorrent_http_protocol::v1::requests::announce) for more
+//! Refer to [`Announce`](bittorrent_http_tracker_protocol::v1::requests::announce) for more
 //! information about the returned structure.
 //!
-//! It returns a bencoded [`Error`](bittorrent_http_protocol::v1::responses::error)
+//! It returns a bencoded [`Error`](bittorrent_http_tracker_protocol::v1::responses::error)
 //! response (`500`) if the query parameters are missing or invalid.
 //!
 //! **Sample announce request**
@@ -33,9 +33,9 @@ use std::panic::Location;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
-use bittorrent_http_protocol::v1::query::Query;
-use bittorrent_http_protocol::v1::requests::announce::{Announce, ParseAnnounceQueryError};
-use bittorrent_http_protocol::v1::responses;
+use bittorrent_http_tracker_protocol::v1::query::Query;
+use bittorrent_http_tracker_protocol::v1::requests::announce::{Announce, ParseAnnounceQueryError};
+use bittorrent_http_tracker_protocol::v1::responses;
 use futures::FutureExt;
 use hyper::StatusCode;
 
@@ -87,8 +87,8 @@ mod tests {
     use std::str::FromStr;
 
     use aquatic_udp_protocol::{NumberOfBytes, PeerId};
-    use bittorrent_http_protocol::v1::requests::announce::{Announce, Compact, Event};
-    use bittorrent_http_protocol::v1::responses::error::Error;
+    use bittorrent_http_tracker_protocol::v1::requests::announce::{Announce, Compact, Event};
+    use bittorrent_http_tracker_protocol::v1::responses::error::Error;
     use bittorrent_primitives::info_hash::InfoHash;
 
     use super::extract_announce_from;

@@ -10,9 +10,9 @@
 use std::net::IpAddr;
 use std::sync::Arc;
 
-use bittorrent_http_protocol::v1::requests::scrape::Scrape;
-use bittorrent_http_protocol::v1::responses;
-use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
+use bittorrent_http_tracker_protocol::v1::requests::scrape::Scrape;
+use bittorrent_http_tracker_protocol::v1::responses;
+use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
 use bittorrent_tracker_core::authentication::Key;
@@ -203,8 +203,8 @@ mod tests {
         use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
         use std::sync::Arc;
 
-        use bittorrent_http_protocol::v1::requests::scrape::Scrape;
-        use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+        use bittorrent_http_tracker_protocol::v1::requests::scrape::Scrape;
+        use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
         use bittorrent_tracker_core::announce_handler::PeersWanted;
         use mockall::predicate::eq;
         use torrust_tracker_primitives::core::ScrapeData;
