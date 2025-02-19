@@ -307,7 +307,6 @@ use serde::{Deserialize, Serialize};
 
 pub mod container;
 pub mod server;
-pub mod test_helpers;
 pub mod v1;
 
 pub const HTTP_TRACKER_LOG_TARGET: &str = "HTTP TRACKER";
@@ -317,4 +316,22 @@ pub const HTTP_TRACKER_LOG_TARGET: &str = "HTTP TRACKER";
 pub enum Version {
     /// The `v1` version of the HTTP tracker.
     V1,
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+
+    pub(crate) mod helpers {
+        use bittorrent_primitives::info_hash::InfoHash;
+
+        /// # Panics
+        ///
+        /// Will panic if the string representation of the info hash is not a valid info hash.
+        #[must_use]
+        pub fn sample_info_hash() -> InfoHash {
+            "3b245504cf5f11bbdbe1201cea6a6bf45aee1bc0" // DevSkim: ignore DS173237
+                .parse::<InfoHash>()
+                .expect("String should be a valid info hash")
+        }
+    }
 }

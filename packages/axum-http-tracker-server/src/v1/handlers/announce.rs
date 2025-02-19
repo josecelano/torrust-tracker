@@ -199,7 +199,7 @@ mod tests {
     use torrust_tracker_configuration::{Configuration, Core};
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::test_helpers::tests::sample_info_hash;
+    use crate::tests::helpers::sample_info_hash;
 
     struct CoreTrackerServices {
         pub core_config: Arc<Core>,
