@@ -19,9 +19,9 @@ use hyper::StatusCode;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::ScrapeData;
 
-use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
-use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
-use crate::servers::http::v1::extractors::scrape_request::ExtractRequest;
+use crate::v1::extractors::authentication_key::Extract as ExtractKey;
+use crate::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
+use crate::v1::extractors::scrape_request::ExtractRequest;
 
 /// It handles the `scrape` request when the HTTP tracker is configured
 /// to run in `public` mode.
@@ -234,7 +234,7 @@ mod tests {
         use torrust_tracker_primitives::core::ScrapeData;
 
         use super::{initialize_private_tracker, sample_client_ip_sources, sample_scrape_request};
-        use crate::servers::http::v1::handlers::scrape::handle_scrape;
+        use crate::v1::handlers::scrape::handle_scrape;
 
         #[tokio::test]
         async fn it_should_return_zeroed_swarm_metadata_when_the_authentication_key_is_missing() {
@@ -291,7 +291,7 @@ mod tests {
         use torrust_tracker_primitives::core::ScrapeData;
 
         use super::{initialize_listed_tracker, sample_client_ip_sources, sample_scrape_request};
-        use crate::servers::http::v1::handlers::scrape::handle_scrape;
+        use crate::v1::handlers::scrape::handle_scrape;
 
         #[tokio::test]
         async fn it_should_return_zeroed_swarm_metadata_when_the_torrent_is_not_whitelisted() {
@@ -322,8 +322,8 @@ mod tests {
         use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_on_reverse_proxy, sample_scrape_request};
-        use crate::servers::http::v1::handlers::scrape::handle_scrape;
-        use crate::servers::http::v1::handlers::scrape::tests::assert_error_response;
+        use crate::v1::handlers::scrape::handle_scrape;
+        use crate::v1::handlers::scrape::tests::assert_error_response;
 
         #[tokio::test]
         async fn it_should_fail_when_the_right_most_x_forwarded_for_header_ip_is_not_available() {
@@ -358,8 +358,8 @@ mod tests {
         use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_not_on_reverse_proxy, sample_scrape_request};
-        use crate::servers::http::v1::handlers::scrape::handle_scrape;
-        use crate::servers::http::v1::handlers::scrape::tests::assert_error_response;
+        use crate::v1::handlers::scrape::handle_scrape;
+        use crate::v1::handlers::scrape::tests::assert_error_response;
 
         #[tokio::test]
         async fn it_should_fail_when_the_client_ip_from_the_connection_info_is_not_available() {

@@ -25,11 +25,11 @@ use std::sync::Arc;
 
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::task::JoinHandle;
+use torrust_axum_server::tsl::make_rust_tls;
 use torrust_server_lib::registar::ServiceRegistrationForm;
 use torrust_tracker_configuration::AccessTokens;
 use tracing::instrument;
 
-use super::make_rust_tls;
 use crate::container::HttpApiContainer;
 use crate::servers::apis::server::{ApiServer, Launcher};
 use crate::servers::apis::Version;

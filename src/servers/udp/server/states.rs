@@ -8,12 +8,11 @@ use derive_more::derive::Display;
 use derive_more::Constructor;
 use tokio::task::JoinHandle;
 use torrust_server_lib::registar::{ServiceRegistration, ServiceRegistrationForm};
-use torrust_server_lib::signals::Halted;
+use torrust_server_lib::signals::{Halted, Started};
 use tracing::{instrument, Level};
 
 use super::spawner::Spawner;
 use super::{Server, UdpError};
-use crate::bootstrap::jobs::Started;
 use crate::container::UdpTrackerContainer;
 use crate::servers::udp::server::launcher::Launcher;
 

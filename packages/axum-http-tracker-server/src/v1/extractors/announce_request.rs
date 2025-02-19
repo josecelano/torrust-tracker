@@ -109,7 +109,7 @@ mod tests {
         assert_eq!(
             announce,
             Announce {
-                info_hash: InfoHash::from_str("3b245504cf5f11bbdbe1201cea6a6bf45aee1bc0").unwrap(),
+                info_hash: InfoHash::from_str("3b245504cf5f11bbdbe1201cea6a6bf45aee1bc0").unwrap(), // DevSkim: ignore DS173237
                 peer_id: PeerId(*b"-qB00000000000000001"),
                 port: 17548,
                 downloaded: Some(NumberOfBytes::new(0)),

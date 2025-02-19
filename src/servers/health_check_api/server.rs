@@ -17,7 +17,7 @@ use tokio::sync::oneshot::{Receiver, Sender};
 use torrust_axum_server::signals::graceful_shutdown;
 use torrust_server_lib::logging::Latency;
 use torrust_server_lib::registar::ServiceRegistry;
-use torrust_server_lib::signals::Halted;
+use torrust_server_lib::signals::{Halted, Started};
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::compression::CompressionLayer;
 use tower_http::propagate_header::PropagateHeaderLayer;
@@ -26,7 +26,6 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tower_http::LatencyUnit;
 use tracing::{instrument, Level, Span};
 
-use crate::bootstrap::jobs::Started;
 use crate::servers::health_check_api::handlers::health_check_handler;
 use crate::servers::health_check_api::HEALTH_CHECK_API_LOG_TARGET;
 
