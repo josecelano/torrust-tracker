@@ -4338,6 +4338,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "torrust-axum-health-check-api-server"
+version = "3.0.0-develop"
+dependencies = [
+ "axum",
+ "axum-server",
+ "futures",
+ "hyper",
+ "serde",
+ "serde_json",
+ "tokio",
+ "torrust-axum-server",
+ "torrust-server-lib",
+ "tower-http",
+ "tracing",
+]
+
+[[package]]
 name = "torrust-axum-http-tracker-server"
 version = "3.0.0-develop"
 dependencies = [
@@ -4439,6 +4456,7 @@ dependencies = [
  "serde_with",
  "thiserror 2.0.11",
  "tokio",
+ "torrust-axum-health-check-api-server",
  "torrust-axum-http-tracker-server",
  "torrust-axum-server",
  "torrust-server-lib",

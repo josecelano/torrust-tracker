@@ -3,10 +3,10 @@ use std::sync::Arc;
 
 use tokio::sync::oneshot::{self, Sender};
 use tokio::task::JoinHandle;
+use torrust_axum_health_check_api_server::{server, HEALTH_CHECK_API_LOG_TARGET};
 use torrust_server_lib::registar::Registar;
 use torrust_server_lib::signals::{self, Halted, Started};
 use torrust_tracker_configuration::HealthCheckApi;
-use torrust_tracker_lib::servers::health_check_api::{server, HEALTH_CHECK_API_LOG_TARGET};
 
 #[derive(Debug)]
 pub enum Error {
