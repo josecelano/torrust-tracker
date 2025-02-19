@@ -33,6 +33,7 @@ use derive_more::Constructor;
 use futures::future::BoxFuture;
 use thiserror::Error;
 use tokio::sync::oneshot::{Receiver, Sender};
+use torrust_axum_server::custom_axum_server::{self, TimeoutAcceptor};
 use torrust_tracker_configuration::AccessTokens;
 use tracing::{instrument, Level};
 
@@ -40,7 +41,6 @@ use super::routes::router;
 use crate::bootstrap::jobs::Started;
 use crate::container::HttpApiContainer;
 use crate::servers::apis::API_LOG_TARGET;
-use crate::servers::custom_axum_server::{self, TimeoutAcceptor};
 use crate::servers::logging::STARTED_ON;
 use crate::servers::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};
 use crate::servers::signals::{graceful_shutdown, Halted};

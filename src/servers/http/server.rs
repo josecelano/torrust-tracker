@@ -7,12 +7,12 @@ use axum_server::Handle;
 use derive_more::Constructor;
 use futures::future::BoxFuture;
 use tokio::sync::oneshot::{Receiver, Sender};
+use torrust_axum_server::custom_axum_server::{self, TimeoutAcceptor};
 use tracing::instrument;
 
 use super::v1::routes::router;
 use crate::bootstrap::jobs::Started;
 use crate::container::HttpTrackerContainer;
-use crate::servers::custom_axum_server::{self, TimeoutAcceptor};
 use crate::servers::http::HTTP_TRACKER_LOG_TARGET;
 use crate::servers::logging::STARTED_ON;
 use crate::servers::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};

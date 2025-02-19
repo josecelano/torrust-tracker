@@ -1,0 +1,26 @@
+[package]
+authors.workspace = true
+description = "A wrapper for the Axum server for Torrust HTTP servers to add timeouts."
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords = ["axum", "server", "torrust", "torrust", "wrapper"]
+license.workspace = true
+name = "torrust-axum-server"
+publish.workspace = true
+readme = "README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+axum-server = { version = "0", features = ["tls-rustls-no-provider"] }
+futures-util = "0"
+http-body = "1"
+hyper = "1"
+hyper-util = { version = "0", features = ["http1", "http2", "tokio"] }
+pin-project-lite = "0"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
+tower = { version = "0", features = ["timeout"] }
+
+[dev-dependencies]
