@@ -652,22 +652,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "bittorrent-udp-protocol"
-version = "3.0.0-develop"
-dependencies = [
- "aquatic_udp_protocol",
- "torrust-tracker-clock",
- "torrust-tracker-primitives",
-]
-
-[[package]]
 name = "bittorrent-udp-tracker-core"
 version = "3.0.0-develop"
 dependencies = [
  "aquatic_udp_protocol",
  "bittorrent-primitives",
  "bittorrent-tracker-core",
- "bittorrent-udp-protocol",
+ "bittorrent-udp-tracker-protocol",
  "bloom",
  "blowfish",
  "cipher",
@@ -682,6 +673,15 @@ dependencies = [
  "torrust-tracker-test-helpers",
  "tracing",
  "zerocopy 0.7.35",
+]
+
+[[package]]
+name = "bittorrent-udp-tracker-protocol"
+version = "3.0.0-develop"
+dependencies = [
+ "aquatic_udp_protocol",
+ "torrust-tracker-clock",
+ "torrust-tracker-primitives",
 ]
 
 [[package]]

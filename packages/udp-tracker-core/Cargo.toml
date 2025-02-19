@@ -17,7 +17,7 @@ version.workspace = true
 aquatic_udp_protocol = "0"
 bittorrent-primitives = "0.1.0"
 bittorrent-tracker-core = { version = "3.0.0-develop", path = "../tracker-core" }
-bittorrent-udp-protocol = { version = "3.0.0-develop", path = "../udp-protocol" }
+bittorrent-udp-tracker-protocol = { version = "3.0.0-develop", path = "../udp-protocol" }
 bloom = "0.3.2"
 blowfish = "0"
 cipher = "0"
