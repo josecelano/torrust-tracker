@@ -2,10 +2,10 @@
 use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use torrust_server_lib::logging::STARTED_ON;
 
 use crate::servers::health_check_api::HEALTH_CHECK_API_LOG_TARGET;
 use crate::servers::http::HTTP_TRACKER_LOG_TARGET;
-use crate::servers::logging::STARTED_ON;
 
 const INFO_THRESHOLD: &str = "INFO";
 

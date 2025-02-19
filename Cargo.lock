@@ -4338,6 +4338,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "torrust-axum-server"
+version = "3.0.0-develop"
+dependencies = [
+ "axum-server",
+ "futures-util",
+ "http-body",
+ "hyper",
+ "hyper-util",
+ "pin-project-lite",
+ "tokio",
+ "torrust-server-lib",
+ "tower 0.4.13",
+ "tracing",
+]
+
+[[package]]
+name = "torrust-server-lib"
+version = "3.0.0-develop"
+dependencies = [
+ "derive_more",
+ "tokio",
+ "tower-http",
+ "tracing",
+]
+
+[[package]]
 name = "torrust-tracker"
 version = "3.0.0-develop"
 dependencies = [
@@ -4362,15 +4388,12 @@ dependencies = [
  "figment",
  "futures",
  "futures-util",
- "http-body",
  "hyper",
- "hyper-util",
  "lazy_static",
  "local-ip-address",
  "mockall",
  "parking_lot",
  "percent-encoding",
- "pin-project-lite",
  "r2d2",
  "r2d2_mysql",
  "r2d2_sqlite",
@@ -4386,6 +4409,8 @@ dependencies = [
  "serde_with",
  "thiserror 2.0.11",
  "tokio",
+ "torrust-axum-server",
+ "torrust-server-lib",
  "torrust-tracker-api-client",
  "torrust-tracker-api-core",
  "torrust-tracker-clock",
@@ -4549,6 +4574,7 @@ dependencies = [
  "futures-util",
  "pin-project",
  "pin-project-lite",
+ "tokio",
  "tower-layer",
  "tower-service",
  "tracing",

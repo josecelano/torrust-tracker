@@ -39,8 +39,8 @@ axum = { version = "0", features = ["macros"] }
 axum-client-ip = "0"
 axum-extra = { version = "0", features = ["query"] }
 axum-server = { version = "0", features = ["tls-rustls-no-provider"] }
-bittorrent-http-tracker-protocol = { version = "3.0.0-develop", path = "packages/http-protocol" }
 bittorrent-http-tracker-core = { version = "3.0.0-develop", path = "packages/http-tracker-core" }
+bittorrent-http-tracker-protocol = { version = "3.0.0-develop", path = "packages/http-protocol" }
 bittorrent-primitives = "0.1.0"
 bittorrent-tracker-client = { version = "3.0.0-develop", path = "packages/tracker-client" }
 bittorrent-tracker-core = { version = "3.0.0-develop", path = "packages/tracker-core" }
@@ -54,13 +54,10 @@ derive_more = { version = "1", features = ["as_ref", "constructor", "from"] }
 figment = "0"
 futures = "0"
 futures-util = "0"
-http-body = "1"
 hyper = "1"
-hyper-util = { version = "0", features = ["http1", "http2", "tokio"] }
 lazy_static = "1"
 parking_lot = "0"
 percent-encoding = "2"
-pin-project-lite = "0"
 r2d2 = "0"
 r2d2_mysql = "25"
 r2d2_sqlite = { version = "0", features = ["bundled"] }
@@ -76,6 +73,8 @@ serde_repr = "0"
 serde_with = { version = "3", features = ["json"] }
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
+torrust-axum-server = { version = "3.0.0-develop", path = "packages/axum-server" }
+torrust-server-lib = { version = "3.0.0-develop", path = "packages/server-lib" }
 torrust-tracker-api-core = { version = "3.0.0-develop", path = "packages/tracker-api-core" }
 torrust-tracker-clock = { version = "3.0.0-develop", path = "packages/clock" }
 torrust-tracker-configuration = { version = "3.0.0-develop", path = "packages/configuration" }

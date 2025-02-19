@@ -15,6 +15,7 @@ use axum::response::Response;
 use axum::routing::get;
 use axum::{middleware, BoxError, Router};
 use hyper::{Request, StatusCode};
+use torrust_server_lib::logging::Latency;
 use torrust_tracker_configuration::{AccessTokens, DEFAULT_TIMEOUT};
 use tower::timeout::TimeoutLayer;
 use tower::ServiceBuilder;
@@ -31,7 +32,6 @@ use super::v1::context::health_check::handlers::health_check_handler;
 use super::v1::middlewares::auth::State;
 use crate::container::HttpApiContainer;
 use crate::servers::apis::API_LOG_TARGET;
-use crate::servers::logging::Latency;
 
 /// Add all API routes to the router.
 #[instrument(skip(http_api_container, access_tokens))]

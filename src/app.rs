@@ -24,13 +24,13 @@
 use std::sync::Arc;
 
 use tokio::task::JoinHandle;
+use torrust_server_lib::registar::Registar;
 use torrust_tracker_configuration::Configuration;
 use tracing::instrument;
 
 use crate::bootstrap::jobs::{health_check_api, http_tracker, torrent_cleanup, tracker_apis, udp_tracker};
 use crate::container::{AppContainer, HttpApiContainer, HttpTrackerContainer, UdpTrackerContainer};
 use crate::servers;
-use crate::servers::registar::Registar;
 
 /// # Panics
 ///

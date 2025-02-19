@@ -7,14 +7,14 @@ use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use derive_more::derive::Display;
 use derive_more::Constructor;
 use tokio::task::JoinHandle;
+use torrust_server_lib::registar::{ServiceRegistration, ServiceRegistrationForm};
+use torrust_server_lib::signals::Halted;
 use tracing::{instrument, Level};
 
 use super::spawner::Spawner;
 use super::{Server, UdpError};
 use crate::bootstrap::jobs::Started;
 use crate::container::UdpTrackerContainer;
-use crate::servers::registar::{ServiceRegistration, ServiceRegistrationForm};
-use crate::servers::signals::Halted;
 use crate::servers::udp::server::launcher::Launcher;
 
 /// A UDP server instance controller with no UDP instance running.
