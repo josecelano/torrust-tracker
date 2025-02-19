@@ -8,15 +8,16 @@ use derive_more::Constructor;
 use futures::future::BoxFuture;
 use tokio::sync::oneshot::{Receiver, Sender};
 use torrust_axum_server::custom_axum_server::{self, TimeoutAcceptor};
+use torrust_axum_server::signals::graceful_shutdown;
+use torrust_server_lib::logging::STARTED_ON;
+use torrust_server_lib::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};
+use torrust_server_lib::signals::Halted;
 use tracing::instrument;
 
 use super::v1::routes::router;
 use crate::bootstrap::jobs::Started;
 use crate::container::HttpTrackerContainer;
 use crate::servers::http::HTTP_TRACKER_LOG_TARGET;
-use crate::servers::logging::STARTED_ON;
-use crate::servers::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};
-use crate::servers::signals::{graceful_shutdown, Halted};
 
 /// Error that can occur when starting or stopping the HTTP server.
 ///
@@ -238,13 +239,13 @@ pub fn check_fn(binding: &SocketAddr) -> ServiceHealthCheckJob {
 mod tests {
     use std::sync::Arc;
 
+    use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
     use crate::bootstrap::jobs::make_rust_tls;
     use crate::container::HttpTrackerContainer;
     use crate::servers::http::server::{HttpServer, Launcher};
-    use crate::servers::registar::Registar;
 
     #[tokio::test]
     async fn it_should_be_able_to_start_and_stop() {

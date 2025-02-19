@@ -10,6 +10,7 @@ use axum::routing::get;
 use axum::{BoxError, Router};
 use axum_client_ip::SecureClientIpSource;
 use hyper::{Request, StatusCode};
+use torrust_server_lib::logging::Latency;
 use torrust_tracker_configuration::DEFAULT_TIMEOUT;
 use tower::timeout::TimeoutLayer;
 use tower::ServiceBuilder;
@@ -24,7 +25,6 @@ use tracing::{instrument, Level, Span};
 use super::handlers::{announce, health_check, scrape};
 use crate::container::HttpTrackerContainer;
 use crate::servers::http::HTTP_TRACKER_LOG_TARGET;
-use crate::servers::logging::Latency;
 
 /// It adds the routes to the router.
 ///

@@ -54,13 +54,10 @@ derive_more = { version = "1", features = ["as_ref", "constructor", "from"] }
 figment = "0"
 futures = "0"
 futures-util = "0"
-http-body = "1"
 hyper = "1"
-hyper-util = { version = "0", features = ["http1", "http2", "tokio"] }
 lazy_static = "1"
 parking_lot = "0"
 percent-encoding = "2"
-pin-project-lite = "0"
 r2d2 = "0"
 r2d2_mysql = "25"
 r2d2_sqlite = { version = "0", features = ["bundled"] }
@@ -77,6 +74,7 @@ serde_with = { version = "3", features = ["json"] }
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal", "sync"] }
 torrust-axum-server = { version = "3.0.0-develop", path = "packages/axum-server" }
+torrust-server-lib = { version = "3.0.0-develop", path = "packages/server-lib" }
 torrust-tracker-api-core = { version = "3.0.0-develop", path = "packages/tracker-api-core" }
 torrust-tracker-clock = { version = "3.0.0-develop", path = "packages/clock" }
 torrust-tracker-configuration = { version = "3.0.0-develop", path = "packages/configuration" }

@@ -1,5 +1,5 @@
+use torrust_server_lib::registar::Registar;
 use torrust_tracker_lib::servers::health_check_api::resources::{Report, Status};
-use torrust_tracker_lib::servers::registar::Registar;
 use torrust_tracker_test_helpers::configuration;
 
 use crate::common::logging;

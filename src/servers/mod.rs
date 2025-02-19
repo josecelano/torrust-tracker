@@ -2,7 +2,4 @@
 pub mod apis;
 pub mod health_check_api;
 pub mod http;
-pub mod logging;
-pub mod registar;
-pub mod signals;
 pub mod udp;

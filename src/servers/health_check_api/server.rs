@@ -14,6 +14,10 @@ use futures::Future;
 use hyper::Request;
 use serde_json::json;
 use tokio::sync::oneshot::{Receiver, Sender};
+use torrust_axum_server::signals::graceful_shutdown;
+use torrust_server_lib::logging::Latency;
+use torrust_server_lib::registar::ServiceRegistry;
+use torrust_server_lib::signals::Halted;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::compression::CompressionLayer;
 use tower_http::propagate_header::PropagateHeaderLayer;
@@ -25,9 +29,6 @@ use tracing::{instrument, Level, Span};
 use crate::bootstrap::jobs::Started;
 use crate::servers::health_check_api::handlers::health_check_handler;
 use crate::servers::health_check_api::HEALTH_CHECK_API_LOG_TARGET;
-use crate::servers::logging::Latency;
-use crate::servers::registar::ServiceRegistry;
-use crate::servers::signals::{graceful_shutdown, Halted};
 
 /// Starts Health Check API server.
 ///

@@ -57,13 +57,13 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
+    use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use super::spawner::Spawner;
     use super::Server;
     use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
     use crate::container::UdpTrackerContainer;
-    use crate::servers::registar::Registar;
 
     #[tokio::test]
     async fn it_should_be_able_to_start_and_stop() {

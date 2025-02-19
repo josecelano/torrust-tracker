@@ -15,13 +15,13 @@ use std::sync::Arc;
 
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::task::JoinHandle;
+use torrust_server_lib::registar::ServiceRegistrationForm;
 use tracing::instrument;
 
 use super::make_rust_tls;
 use crate::container::HttpTrackerContainer;
 use crate::servers::http::server::{HttpServer, Launcher};
 use crate::servers::http::Version;
-use crate::servers::registar::ServiceRegistrationForm;
 
 /// It starts a new HTTP server with the provided configuration and version.
 ///
@@ -78,13 +78,13 @@ async fn start_v1(
 mod tests {
     use std::sync::Arc;
 
+    use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
     use crate::bootstrap::jobs::http_tracker::start_job;
     use crate::container::HttpTrackerContainer;
     use crate::servers::http::Version;
-    use crate::servers::registar::Registar;
 
     #[tokio::test]
     async fn it_should_start_http_tracker() {
