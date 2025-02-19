@@ -57,7 +57,7 @@
 //!
 //! - A REST [`API`](crate::servers::apis)
 //! - One or more [`UDP`](crate::servers::udp) trackers
-//! - One or more [`HTTP`](crate::servers::http) trackers
+//! - One or more [`HTTP`](torrust_axum_http_tracker_server) trackers
 //!
 //! # Installation
 //!
@@ -124,7 +124,7 @@
 //! By default the tracker uses `SQLite` and the database file name `sqlite3.db`.
 //!
 //! You only need the `tls` directory in case you are setting up SSL for the HTTP tracker or the tracker API.
-//! Visit [`HTTP`](crate::servers::http) or [`API`](crate::servers::apis) if you want to know how you can use HTTPS.
+//! Visit [`HTTP`](torrust_axum_http_tracker_server) or [`API`](crate::servers::apis) if you want to know how you can use HTTPS.
 //!
 //! ## Install from sources
 //!
@@ -301,7 +301,7 @@
 //! bind_address = "0.0.0.0:7070"
 //! ```
 //!
-//! Refer to the [`HTTP`](crate::servers::http) documentation for more information about the [`HTTP`](crate::servers::http) tracker.
+//! Refer to the [`HTTP`](torrust_axum_http_tracker_server) documentation for more information about the [`HTTP`](torrust_axum_http_tracker_server) tracker.
 //!
 //! ### Announce
 //!
@@ -408,7 +408,7 @@
 //! - The core tracker [`core`]
 //! - The tracker REST [`API`](crate::servers::apis)
 //! - The [`UDP`](crate::servers::udp) tracker
-//! - The [`HTTP`](crate::servers::http) tracker
+//! - The [`HTTP`](torrust_axum_http_tracker_server) tracker
 //!
 //! ![Torrust Tracker Components](https://raw.githubusercontent.com/torrust/torrust-tracker/main/docs/media/torrust-tracker-components.png)
 //!
@@ -452,7 +452,7 @@
 //!
 //! HTTP tracker was the original tracker specification defined on the [BEP 3]((https://www.bittorrent.org/beps/bep_0003.html)).
 //!
-//! See [`HTTP`](crate::servers::http) for more details on the HTTP tracker.
+//! See [`HTTP`](torrust_axum_http_tracker_server) for more details on the HTTP tracker.
 //!
 //! You can find more information about UDP tracker on:
 //!

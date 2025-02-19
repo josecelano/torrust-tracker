@@ -14,7 +14,7 @@ async fn environment_should_be_started_and_stopped() {
 
 mod for_all_config_modes {
 
-    use torrust_tracker_lib::servers::http::v1::handlers::health_check::{Report, Status};
+    use torrust_axum_http_tracker_server::v1::handlers::health_check::{Report, Status};
     use torrust_tracker_test_helpers::configuration;
 
     use crate::common::logging;

@@ -2,6 +2,14 @@
 use derive_more::Display;
 use tracing::instrument;
 
+/// This is the message that the "launcher" spawned task sends to the main
+/// application process to notify the service was successfully started.
+///
+#[derive(Debug)]
+pub struct Started {
+    pub address: std::net::SocketAddr,
+}
+
 /// This is the message that the "launcher" spawned task receives from the main
 /// application process to notify the service to shutdown.
 ///

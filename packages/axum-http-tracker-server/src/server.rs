@@ -11,13 +11,12 @@ use torrust_axum_server::custom_axum_server::{self, TimeoutAcceptor};
 use torrust_axum_server::signals::graceful_shutdown;
 use torrust_server_lib::logging::STARTED_ON;
 use torrust_server_lib::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};
-use torrust_server_lib::signals::Halted;
+use torrust_server_lib::signals::{Halted, Started};
 use tracing::instrument;
 
 use super::v1::routes::router;
-use crate::bootstrap::jobs::Started;
 use crate::container::HttpTrackerContainer;
-use crate::servers::http::HTTP_TRACKER_LOG_TARGET;
+use crate::HTTP_TRACKER_LOG_TARGET;
 
 /// Error that can occur when starting or stopping the HTTP server.
 ///
@@ -239,32 +238,91 @@ pub fn check_fn(binding: &SocketAddr) -> ServiceHealthCheckJob {
 mod tests {
     use std::sync::Arc;
 
+    use bittorrent_tracker_core::announce_handler::AnnounceHandler;
+    use bittorrent_tracker_core::authentication::key::repository::in_memory::InMemoryKeyRepository;
+    use bittorrent_tracker_core::authentication::service;
+    use bittorrent_tracker_core::databases::setup::initialize_database;
+    use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
+    use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
+    use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentTorrentRepository;
+    use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
+    use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
+    use torrust_axum_server::tsl::make_rust_tls;
     use torrust_server_lib::registar::Registar;
+    use torrust_tracker_configuration::Configuration;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
-    use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
-    use crate::bootstrap::jobs::make_rust_tls;
     use crate::container::HttpTrackerContainer;
-    use crate::servers::http::server::{HttpServer, Launcher};
+    use crate::server::{HttpServer, Launcher};
+
+    pub fn initialize_container(configuration: &Configuration) -> HttpTrackerContainer {
+        let core_config = Arc::new(configuration.core.clone());
+
+        let http_trackers = configuration
+            .http_trackers
+            .clone()
+            .expect("missing HTTP trackers configuration");
+
+        let http_tracker_config = &http_trackers[0];
+
+        let http_tracker_config = Arc::new(http_tracker_config.clone());
+
+        // HTTP stats
+        let (http_stats_event_sender, _http_stats_repository) =
+            bittorrent_http_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
+        let http_stats_event_sender = Arc::new(http_stats_event_sender);
+
+        let database = initialize_database(&configuration.core);
+        let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
+        let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&configuration.core, &in_memory_whitelist.clone()));
+        let in_memory_key_repository = Arc::new(InMemoryKeyRepository::default());
+        let authentication_service = Arc::new(service::AuthenticationService::new(
+            &configuration.core,
+            &in_memory_key_repository,
+        ));
+        let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
+        let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
+
+        let announce_handler = Arc::new(AnnounceHandler::new(
+            &configuration.core,
+            &whitelist_authorization,
+            &in_memory_torrent_repository,
+            &db_torrent_repository,
+        ));
+
+        let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
+
+        HttpTrackerContainer {
+            core_config,
+            http_tracker_config,
+            announce_handler,
+            scrape_handler,
+            whitelist_authorization,
+            http_stats_event_sender,
+            authentication_service,
+        }
+    }
 
     #[tokio::test]
     async fn it_should_be_able_to_start_and_stop() {
-        let cfg = Arc::new(ephemeral_public());
+        let configuration = Arc::new(ephemeral_public());
 
-        initialize_global_services(&cfg);
+        let http_trackers = configuration
+            .http_trackers
+            .clone()
+            .expect("missing HTTP trackers configuration");
 
-        let app_container = Arc::new(initialize_app_container(&cfg));
-
-        let http_trackers = cfg.http_trackers.clone().expect("missing HTTP trackers configuration");
         let http_tracker_config = &http_trackers[0];
+
+        //initialize_global_services(&cfg); // not needed for this test
+
+        let http_tracker_container = Arc::new(initialize_container(&configuration));
+
         let bind_to = http_tracker_config.bind_address;
 
         let tls = make_rust_tls(&http_tracker_config.tsl_config)
             .await
             .map(|tls| tls.expect("tls config failed"));
-
-        let http_tracker_config = Arc::new(http_tracker_config.clone());
-        let http_tracker_container = Arc::new(HttpTrackerContainer::from_app_container(&http_tracker_config, &app_container));
 
         let register = &Registar::default();
         let stopped = HttpServer::new(Launcher::new(bind_to, tls));

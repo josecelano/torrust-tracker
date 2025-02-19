@@ -15,13 +15,12 @@ use std::sync::Arc;
 
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::task::JoinHandle;
+use torrust_axum_http_tracker_server::container::HttpTrackerContainer;
+use torrust_axum_http_tracker_server::server::{HttpServer, Launcher};
+use torrust_axum_http_tracker_server::Version;
+use torrust_axum_server::tsl::make_rust_tls;
 use torrust_server_lib::registar::ServiceRegistrationForm;
 use tracing::instrument;
-
-use super::make_rust_tls;
-use crate::container::HttpTrackerContainer;
-use crate::servers::http::server::{HttpServer, Launcher};
-use crate::servers::http::Version;
 
 /// It starts a new HTTP server with the provided configuration and version.
 ///
@@ -78,13 +77,12 @@ async fn start_v1(
 mod tests {
     use std::sync::Arc;
 
+    use torrust_axum_http_tracker_server::Version;
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
     use crate::bootstrap::jobs::http_tracker::start_job;
-    use crate::container::HttpTrackerContainer;
-    use crate::servers::http::Version;
 
     #[tokio::test]
     async fn it_should_start_http_tracker() {
@@ -96,7 +94,7 @@ mod tests {
 
         let app_container = Arc::new(initialize_app_container(&cfg));
 
-        let http_tracker_container = Arc::new(HttpTrackerContainer::from_app_container(&http_tracker_config, &app_container));
+        let http_tracker_container = Arc::new(app_container.http_tracker_container(&http_tracker_config));
 
         let version = Version::V1;
 

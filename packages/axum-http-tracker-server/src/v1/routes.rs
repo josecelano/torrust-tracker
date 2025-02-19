@@ -24,7 +24,7 @@ use tracing::{instrument, Level, Span};
 
 use super::handlers::{announce, health_check, scrape};
 use crate::container::HttpTrackerContainer;
-use crate::servers::http::HTTP_TRACKER_LOG_TARGET;
+use crate::HTTP_TRACKER_LOG_TARGET;
 
 /// It adds the routes to the router.
 ///

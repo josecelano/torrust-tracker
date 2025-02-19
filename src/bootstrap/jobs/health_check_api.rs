@@ -18,11 +18,10 @@ use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use torrust_server_lib::logging::STARTED_ON;
 use torrust_server_lib::registar::ServiceRegistry;
-use torrust_server_lib::signals::Halted;
+use torrust_server_lib::signals::{Halted, Started};
 use torrust_tracker_configuration::HealthCheckApi;
 use tracing::instrument;
 
-use super::Started;
 use crate::servers::health_check_api::{server, HEALTH_CHECK_API_LOG_TARGET};
 
 /// This function starts a new Health Check API server with the provided

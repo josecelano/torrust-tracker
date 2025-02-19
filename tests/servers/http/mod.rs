@@ -5,10 +5,10 @@ pub mod requests;
 pub mod responses;
 pub mod v1;
 
-pub type Started = environment::Environment<server::Running>;
-
 use percent_encoding::NON_ALPHANUMERIC;
-use torrust_tracker_lib::servers::http::server;
+use torrust_axum_http_tracker_server::server;
+
+pub type Started = environment::Environment<server::Running>;
 
 pub type ByteArray20 = [u8; 20];
 

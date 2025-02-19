@@ -100,7 +100,7 @@ mod tests {
     fn test_info_hash() -> TestInfoHash {
         TestInfoHash {
             bencoded: "%3B%24U%04%CF%5F%11%BB%DB%E1%20%1C%EAjk%F4Z%EE%1B%C0".to_owned(),
-            value: InfoHash::from_str("3b245504cf5f11bbdbe1201cea6a6bf45aee1bc0").unwrap(),
+            value: InfoHash::from_str("3b245504cf5f11bbdbe1201cea6a6bf45aee1bc0").unwrap(), // DevSkim: ignore DS173237
         }
     }
 

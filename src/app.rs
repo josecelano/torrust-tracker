@@ -29,7 +29,7 @@ use torrust_tracker_configuration::Configuration;
 use tracing::instrument;
 
 use crate::bootstrap::jobs::{health_check_api, http_tracker, torrent_cleanup, tracker_apis, udp_tracker};
-use crate::container::{AppContainer, HttpApiContainer, HttpTrackerContainer, UdpTrackerContainer};
+use crate::container::{AppContainer, HttpApiContainer, UdpTrackerContainer};
 use crate::servers;
 
 /// # Panics
@@ -92,10 +92,14 @@ pub async fn start(config: &Configuration, app_container: &Arc<AppContainer>) ->
     if let Some(http_trackers) = &config.http_trackers {
         for http_tracker_config in http_trackers {
             let http_tracker_config = Arc::new(http_tracker_config.clone());
-            let http_tracker_container = Arc::new(HttpTrackerContainer::from_app_container(&http_tracker_config, app_container));
+            let http_tracker_container = Arc::new(app_container.http_tracker_container(&http_tracker_config));
 
-            if let Some(job) =
-                http_tracker::start_job(http_tracker_container, registar.give_form(), servers::http::Version::V1).await
+            if let Some(job) = http_tracker::start_job(
+                http_tracker_container,
+                registar.give_form(),
+                torrust_axum_http_tracker_server::Version::V1,
+            )
+            .await
             {
                 jobs.push(job);
             }

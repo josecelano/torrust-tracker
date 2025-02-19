@@ -21,9 +21,9 @@ use hyper::StatusCode;
 use torrust_tracker_configuration::Core;
 use torrust_tracker_primitives::core::AnnounceData;
 
-use crate::servers::http::v1::extractors::announce_request::ExtractRequest;
-use crate::servers::http::v1::extractors::authentication_key::Extract as ExtractKey;
-use crate::servers::http::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
+use crate::v1::extractors::announce_request::ExtractRequest;
+use crate::v1::extractors::authentication_key::Extract as ExtractKey;
+use crate::v1::extractors::client_ip_sources::Extract as ExtractClientIpSources;
 
 /// It handles the `announce` request when the HTTP tracker does not require
 /// authentication (no PATH `key` parameter required).
@@ -199,7 +199,7 @@ mod tests {
     use torrust_tracker_configuration::{Configuration, Core};
     use torrust_tracker_test_helpers::configuration;
 
-    use crate::servers::http::test_helpers::tests::sample_info_hash;
+    use crate::tests::helpers::sample_info_hash;
 
     struct CoreTrackerServices {
         pub core_config: Arc<Core>,
@@ -296,8 +296,8 @@ mod tests {
         use bittorrent_tracker_core::authentication;
 
         use super::{initialize_private_tracker, sample_announce_request, sample_client_ip_sources};
-        use crate::servers::http::v1::handlers::announce::handle_announce;
-        use crate::servers::http::v1::handlers::announce::tests::assert_error_response;
+        use crate::v1::handlers::announce::handle_announce;
+        use crate::v1::handlers::announce::tests::assert_error_response;
 
         #[tokio::test]
         async fn it_should_fail_when_the_authentication_key_is_missing() {
@@ -352,8 +352,8 @@ mod tests {
     mod with_tracker_in_listed_mode {
 
         use super::{initialize_listed_tracker, sample_announce_request, sample_client_ip_sources};
-        use crate::servers::http::v1::handlers::announce::handle_announce;
-        use crate::servers::http::v1::handlers::announce::tests::assert_error_response;
+        use crate::v1::handlers::announce::handle_announce;
+        use crate::v1::handlers::announce::tests::assert_error_response;
 
         #[tokio::test]
         async fn it_should_fail_when_the_announced_torrent_is_not_whitelisted() {
@@ -389,8 +389,8 @@ mod tests {
         use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_on_reverse_proxy, sample_announce_request};
-        use crate::servers::http::v1::handlers::announce::handle_announce;
-        use crate::servers::http::v1::handlers::announce::tests::assert_error_response;
+        use crate::v1::handlers::announce::handle_announce;
+        use crate::v1::handlers::announce::tests::assert_error_response;
 
         #[tokio::test]
         async fn it_should_fail_when_the_right_most_x_forwarded_for_header_ip_is_not_available() {
@@ -426,8 +426,8 @@ mod tests {
         use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_not_on_reverse_proxy, sample_announce_request};
-        use crate::servers::http::v1::handlers::announce::handle_announce;
-        use crate::servers::http::v1::handlers::announce::tests::assert_error_response;
+        use crate::v1::handlers::announce::handle_announce;
+        use crate::v1::handlers::announce::tests::assert_error_response;
 
         #[tokio::test]
         async fn it_should_fail_when_the_client_ip_from_the_connection_info_is_not_available() {

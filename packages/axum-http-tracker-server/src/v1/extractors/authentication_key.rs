@@ -54,7 +54,7 @@ use bittorrent_tracker_core::authentication::Key;
 use hyper::StatusCode;
 use serde::Deserialize;
 
-use crate::servers::http::v1::handlers::common::auth;
+use crate::v1::handlers::common::auth;
 
 /// Extractor for the [`Key`] struct.
 pub struct Extract(pub Key);

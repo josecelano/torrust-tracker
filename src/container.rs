@@ -14,6 +14,7 @@ use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist
 use bittorrent_udp_tracker_core::services::banning::BanService;
 use bittorrent_udp_tracker_core::{self};
 use tokio::sync::RwLock;
+use torrust_axum_http_tracker_server::container::HttpTrackerContainer;
 use torrust_tracker_configuration::{Core, HttpApi, HttpTracker, UdpTracker};
 
 pub struct AppContainer {
@@ -34,6 +35,21 @@ pub struct AppContainer {
     pub in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
     pub db_torrent_repository: Arc<DatabasePersistentTorrentRepository>,
     pub torrents_manager: Arc<TorrentsManager>,
+}
+
+impl AppContainer {
+    #[must_use]
+    pub fn http_tracker_container(&self, http_tracker_config: &Arc<HttpTracker>) -> HttpTrackerContainer {
+        HttpTrackerContainer {
+            http_tracker_config: http_tracker_config.clone(),
+            core_config: self.core_config.clone(),
+            announce_handler: self.announce_handler.clone(),
+            scrape_handler: self.scrape_handler.clone(),
+            whitelist_authorization: self.whitelist_authorization.clone(),
+            http_stats_event_sender: self.http_stats_event_sender.clone(),
+            authentication_service: self.authentication_service.clone(),
+        }
+    }
 }
 
 pub struct UdpTrackerContainer {
@@ -57,31 +73,6 @@ impl UdpTrackerContainer {
             whitelist_authorization: app_container.whitelist_authorization.clone(),
             udp_stats_event_sender: app_container.udp_stats_event_sender.clone(),
             ban_service: app_container.ban_service.clone(),
-        }
-    }
-}
-
-pub struct HttpTrackerContainer {
-    pub core_config: Arc<Core>,
-    pub http_tracker_config: Arc<HttpTracker>,
-    pub announce_handler: Arc<AnnounceHandler>,
-    pub scrape_handler: Arc<ScrapeHandler>,
-    pub whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
-    pub http_stats_event_sender: Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
-    pub authentication_service: Arc<AuthenticationService>,
-}
-
-impl HttpTrackerContainer {
-    #[must_use]
-    pub fn from_app_container(http_tracker_config: &Arc<HttpTracker>, app_container: &Arc<AppContainer>) -> Self {
-        Self {
-            http_tracker_config: http_tracker_config.clone(),
-            core_config: app_container.core_config.clone(),
-            announce_handler: app_container.announce_handler.clone(),
-            scrape_handler: app_container.scrape_handler.clone(),
-            whitelist_authorization: app_container.whitelist_authorization.clone(),
-            http_stats_event_sender: app_container.http_stats_event_sender.clone(),
-            authentication_service: app_container.authentication_service.clone(),
         }
     }
 }

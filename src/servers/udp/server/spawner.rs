@@ -7,10 +7,9 @@ use derive_more::derive::Display;
 use derive_more::Constructor;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use torrust_server_lib::signals::Halted;
+use torrust_server_lib::signals::{Halted, Started};
 
 use super::launcher::Launcher;
-use crate::bootstrap::jobs::Started;
 use crate::container::UdpTrackerContainer;
 
 #[derive(Constructor, Copy, Clone, Debug, Display)]

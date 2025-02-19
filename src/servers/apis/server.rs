@@ -37,12 +37,11 @@ use torrust_axum_server::custom_axum_server::{self, TimeoutAcceptor};
 use torrust_axum_server::signals::graceful_shutdown;
 use torrust_server_lib::logging::STARTED_ON;
 use torrust_server_lib::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};
-use torrust_server_lib::signals::Halted;
+use torrust_server_lib::signals::{Halted, Started};
 use torrust_tracker_configuration::AccessTokens;
 use tracing::{instrument, Level};
 
 use super::routes::router;
-use crate::bootstrap::jobs::Started;
 use crate::container::HttpApiContainer;
 use crate::servers::apis::API_LOG_TARGET;
 
@@ -295,11 +294,11 @@ impl Launcher {
 mod tests {
     use std::sync::Arc;
 
+    use torrust_axum_server::tsl::make_rust_tls;
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
-    use crate::bootstrap::jobs::make_rust_tls;
     use crate::container::HttpApiContainer;
     use crate::servers::apis::server::{ApiServer, Launcher};
 
