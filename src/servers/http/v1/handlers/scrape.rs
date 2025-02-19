@@ -9,9 +9,9 @@ use std::sync::Arc;
 
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
-use bittorrent_http_protocol::v1::requests::scrape::Scrape;
-use bittorrent_http_protocol::v1::responses;
-use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+use bittorrent_http_tracker_protocol::v1::requests::scrape::Scrape;
+use bittorrent_http_tracker_protocol::v1::responses;
+use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
 use bittorrent_tracker_core::authentication::Key;
 use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
@@ -144,9 +144,9 @@ mod tests {
     use std::str::FromStr;
     use std::sync::Arc;
 
-    use bittorrent_http_protocol::v1::requests::scrape::Scrape;
-    use bittorrent_http_protocol::v1::responses;
-    use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+    use bittorrent_http_tracker_protocol::v1::requests::scrape::Scrape;
+    use bittorrent_http_tracker_protocol::v1::responses;
+    use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
     use bittorrent_primitives::info_hash::InfoHash;
     use bittorrent_tracker_core::authentication::key::repository::in_memory::InMemoryKeyRepository;
     use bittorrent_tracker_core::authentication::service::AuthenticationService;
@@ -319,7 +319,7 @@ mod tests {
 
     mod with_tracker_on_reverse_proxy {
 
-        use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+        use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_on_reverse_proxy, sample_scrape_request};
         use crate::servers::http::v1::handlers::scrape::handle_scrape;
@@ -355,7 +355,7 @@ mod tests {
 
     mod with_tracker_not_on_reverse_proxy {
 
-        use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+        use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_not_on_reverse_proxy, sample_scrape_request};
         use crate::servers::http::v1::handlers::scrape::handle_scrape;

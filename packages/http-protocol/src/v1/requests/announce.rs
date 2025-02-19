@@ -34,7 +34,7 @@ const NUMWANT: &str = "numwant";
 ///
 /// ```rust
 /// use aquatic_udp_protocol::{NumberOfBytes, PeerId};
-/// use bittorrent_http_protocol::v1::requests::announce::{Announce, Compact, Event};
+/// use bittorrent_http_tracker_protocol::v1::requests::announce::{Announce, Compact, Event};
 /// use bittorrent_primitives::info_hash::InfoHash;
 ///
 /// let request = Announce {

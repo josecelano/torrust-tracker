@@ -9,7 +9,7 @@
 //! It's a wrapper for Axum `Path` extractor in order to return custom
 //! authentication errors.
 //!
-//! It returns a bencoded [`Error`](bittorrent_http_protocol::v1::responses::error)
+//! It returns a bencoded [`Error`](bittorrent_http_tracker_protocol::v1::responses::error)
 //! response (`500`) if the `key` parameter are missing or invalid.
 //!
 //! **Sample authentication error responses**
@@ -49,7 +49,7 @@ use axum::extract::rejection::PathRejection;
 use axum::extract::{FromRequestParts, Path};
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
-use bittorrent_http_protocol::v1::responses;
+use bittorrent_http_tracker_protocol::v1::responses;
 use bittorrent_tracker_core::authentication::Key;
 use hyper::StatusCode;
 use serde::Deserialize;
@@ -126,7 +126,7 @@ fn custom_error(rejection: &PathRejection) -> responses::error::Error {
 #[cfg(test)]
 mod tests {
 
-    use bittorrent_http_protocol::v1::responses::error::Error;
+    use bittorrent_http_tracker_protocol::v1::responses::error::Error;
 
     use super::parse_key;
 

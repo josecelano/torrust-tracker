@@ -11,9 +11,9 @@ use std::net::IpAddr;
 use std::panic::Location;
 use std::sync::Arc;
 
-use bittorrent_http_protocol::v1::requests::announce::{peer_from_request, Announce};
-use bittorrent_http_protocol::v1::responses;
-use bittorrent_http_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
+use bittorrent_http_tracker_protocol::v1::requests::announce::{peer_from_request, Announce};
+use bittorrent_http_tracker_protocol::v1::responses;
+use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::{self, ClientIpSources};
 use bittorrent_tracker_core::announce_handler::{AnnounceHandler, PeersWanted};
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
 use bittorrent_tracker_core::authentication::{self, Key};
@@ -115,8 +115,8 @@ mod tests {
     use std::sync::Arc;
 
     use aquatic_udp_protocol::{AnnounceEvent, NumberOfBytes, PeerId};
-    use bittorrent_http_protocol::v1::requests::announce::Announce;
-    use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+    use bittorrent_http_tracker_protocol::v1::requests::announce::Announce;
+    use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
     use bittorrent_tracker_core::announce_handler::AnnounceHandler;
     use bittorrent_tracker_core::authentication::key::repository::in_memory::InMemoryKeyRepository;
     use bittorrent_tracker_core::authentication::service::AuthenticationService;

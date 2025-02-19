@@ -27,7 +27,7 @@ impl Error {
     /// Returns the bencoded representation of the `Error` struct.
     ///
     /// ```rust
-    /// use bittorrent_http_protocol::v1::responses::error::Error;
+    /// use bittorrent_http_tracker_protocol::v1::responses::error::Error;
     ///
     /// let err = Error {
     ///    failure_reason: "error message".to_owned(),

@@ -10,9 +10,9 @@ use std::sync::Arc;
 use aquatic_udp_protocol::AnnounceEvent;
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
-use bittorrent_http_protocol::v1::requests::announce::{Announce, Compact, Event};
-use bittorrent_http_protocol::v1::responses::{self};
-use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+use bittorrent_http_tracker_protocol::v1::requests::announce::{Announce, Compact, Event};
+use bittorrent_http_tracker_protocol::v1::responses::{self};
+use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
 use bittorrent_tracker_core::authentication::Key;
@@ -185,9 +185,9 @@ mod tests {
     use std::sync::Arc;
 
     use aquatic_udp_protocol::PeerId;
-    use bittorrent_http_protocol::v1::requests::announce::Announce;
-    use bittorrent_http_protocol::v1::responses;
-    use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+    use bittorrent_http_tracker_protocol::v1::requests::announce::Announce;
+    use bittorrent_http_tracker_protocol::v1::responses;
+    use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
     use bittorrent_tracker_core::announce_handler::AnnounceHandler;
     use bittorrent_tracker_core::authentication::key::repository::in_memory::InMemoryKeyRepository;
     use bittorrent_tracker_core::authentication::service::AuthenticationService;
@@ -386,7 +386,7 @@ mod tests {
 
     mod with_tracker_on_reverse_proxy {
 
-        use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+        use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_on_reverse_proxy, sample_announce_request};
         use crate::servers::http::v1::handlers::announce::handle_announce;
@@ -423,7 +423,7 @@ mod tests {
 
     mod with_tracker_not_on_reverse_proxy {
 
-        use bittorrent_http_protocol::v1::services::peer_ip_resolver::ClientIpSources;
+        use bittorrent_http_tracker_protocol::v1::services::peer_ip_resolver::ClientIpSources;
 
         use super::{initialize_tracker_not_on_reverse_proxy, sample_announce_request};
         use crate::servers::http::v1::handlers::announce::handle_announce;
