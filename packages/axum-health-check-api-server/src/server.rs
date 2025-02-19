@@ -26,8 +26,8 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tower_http::LatencyUnit;
 use tracing::{instrument, Level, Span};
 
-use crate::servers::health_check_api::handlers::health_check_handler;
-use crate::servers::health_check_api::HEALTH_CHECK_API_LOG_TARGET;
+use crate::handlers::health_check_handler;
+use crate::HEALTH_CHECK_API_LOG_TARGET;
 
 /// Starts Health Check API server.
 ///

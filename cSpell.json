@@ -63,6 +63,7 @@
         "gecos",
         "Grcov",
         "hasher",
+        "healthcheck",
         "heaptrack",
         "hexlify",
         "hlocalhost",
