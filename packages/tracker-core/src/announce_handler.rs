@@ -162,10 +162,6 @@ impl AnnounceHandler {
         remote_client_ip: &IpAddr,
         peers_wanted: &PeersWanted,
     ) -> Result<AnnounceData, AnnounceError> {
-        // code-review: maybe instead of mutating the peer we could just return
-        // a tuple with the new peer and the announce data: (Peer, AnnounceData).
-        // It could even be a different struct: `StoredPeer` or `PublicPeer`.
-
         self.whitelist_authorization.authorize(info_hash).await?;
 
         tracing::debug!("Before: {peer:?}");
