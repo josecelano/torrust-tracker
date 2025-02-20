@@ -268,6 +268,7 @@ impl Database for Mysql {
 mod tests {
     use std::sync::Arc;
 
+    use testcontainers::core::IntoContainerPort;
     /*
     We run a MySQL container and run all the tests against the same container and database.
 
@@ -285,7 +286,7 @@ mod tests {
     If we increase the number of methods or the number or drivers.
     */
     use testcontainers::runners::AsyncRunner;
-    use testcontainers::{ContainerAsync, GenericImage};
+    use testcontainers::{ContainerAsync, GenericImage, ImageExt};
     use torrust_tracker_configuration::Core;
 
     use super::Mysql;
@@ -298,12 +299,12 @@ mod tests {
     impl StoppedMysqlContainer {
         async fn run(self, config: &MysqlConfiguration) -> Result<RunningMysqlContainer, Box<dyn std::error::Error + 'static>> {
             let container = GenericImage::new("mysql", "8.0")
+                .with_exposed_port(config.internal_port.tcp())
+                // todo: this does not work
+                //.with_wait_for(WaitFor::message_on_stdout("ready for connections"))
                 .with_env_var("MYSQL_ROOT_PASSWORD", config.db_root_password.clone())
                 .with_env_var("MYSQL_DATABASE", config.database.clone())
                 .with_env_var("MYSQL_ROOT_HOST", "%")
-                .with_exposed_port(config.internal_port)
-                // todo: this doesn't work
-                //.with_wait_for(WaitFor::message_on_stdout("ready for connections"))
                 .start()
                 .await?;
 

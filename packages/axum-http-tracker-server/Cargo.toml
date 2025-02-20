@@ -22,7 +22,7 @@ bittorrent-http-tracker-core = { version = "3.0.0-develop", path = "../http-trac
 bittorrent-http-tracker-protocol = { version = "3.0.0-develop", path = "../http-protocol" }
 bittorrent-primitives = "0.1.0"
 bittorrent-tracker-core = { version = "3.0.0-develop", path = "../tracker-core" }
-derive_more = { version = "1", features = ["as_ref", "constructor", "from"] }
+derive_more = { version = "2", features = ["as_ref", "constructor", "from"] }
 futures = "0"
 hyper = "1"
 reqwest = { version = "0", features = ["json"] }
