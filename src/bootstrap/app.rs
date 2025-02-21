@@ -182,5 +182,5 @@ pub fn initialize_static() {
 /// See [the logging setup](crate::bootstrap::logging::setup) for more info about logging.
 #[instrument(skip(config))]
 pub fn initialize_logging(config: &Configuration) {
-    bootstrap::logging::setup(config);
+    bootstrap::logging::setup(&config.logging);
 }

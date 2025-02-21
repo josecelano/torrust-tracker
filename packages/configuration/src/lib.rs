@@ -37,6 +37,7 @@ pub const ENV_VAR_CONFIG_TOML_PATH: &str = "TORRUST_TRACKER_CONFIG_TOML_PATH";
 
 pub type Configuration = v2_0_0::Configuration;
 pub type Core = v2_0_0::core::Core;
+pub type Logging = v2_0_0::logging::Logging;
 pub type HealthCheckApi = v2_0_0::health_check_api::HealthCheckApi;
 pub type HttpApi = v2_0_0::tracker_api::HttpApi;
 pub type HttpTracker = v2_0_0::http_tracker::HttpTracker;
