@@ -98,7 +98,7 @@ mod tests {
     use std::sync::Arc;
 
     use torrust_server_lib::registar::Registar;
-    use torrust_tracker_api_core::container::initialize_http_api_container;
+    use torrust_tracker_api_core::container::HttpApiContainer;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::initialize_global_services;
@@ -113,7 +113,7 @@ mod tests {
 
         initialize_global_services(&cfg);
 
-        let http_api_container = initialize_http_api_container(&core_config, &http_api_config);
+        let http_api_container = HttpApiContainer::initialize(&core_config, &http_api_config);
 
         let version = Version::V1;
 

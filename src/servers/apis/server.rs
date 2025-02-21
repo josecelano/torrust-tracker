@@ -296,7 +296,7 @@ mod tests {
 
     use torrust_axum_server::tsl::make_rust_tls;
     use torrust_server_lib::registar::Registar;
-    use torrust_tracker_api_core::container::initialize_http_api_container;
+    use torrust_tracker_api_core::container::HttpApiContainer;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::initialize_global_services;
@@ -322,7 +322,7 @@ mod tests {
 
         let register = &Registar::default();
 
-        let http_api_container = initialize_http_api_container(&core_config, &http_api_config);
+        let http_api_container = HttpApiContainer::initialize(&core_config, &http_api_config);
 
         let started = stopped
             .start(http_api_container, register.give_form(), access_tokens)
