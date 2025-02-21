@@ -24,48 +24,29 @@ pub struct HttpTrackerCoreContainer {
 
 impl HttpTrackerCoreContainer {
     #[must_use]
+    pub fn initialize(core_config: &Arc<Core>, http_tracker_config: &Arc<HttpTracker>) -> Arc<Self> {
+        let tracker_core_container = Arc::new(TrackerCoreContainer::initialize(core_config));
+        Self::initialize_from(&tracker_core_container, http_tracker_config)
+    }
+
+    #[must_use]
     pub fn initialize_from(
         tracker_core_container: &Arc<TrackerCoreContainer>,
         http_tracker_config: &Arc<HttpTracker>,
     ) -> Arc<Self> {
-        // HTTP stats
         let (http_stats_event_sender, http_stats_repository) =
             statistics::setup::factory(tracker_core_container.core_config.tracker_usage_statistics);
         let http_stats_event_sender = Arc::new(http_stats_event_sender);
         let http_stats_repository = Arc::new(http_stats_repository);
 
         Arc::new(Self {
-            http_tracker_config: http_tracker_config.clone(),
-
             core_config: tracker_core_container.core_config.clone(),
             announce_handler: tracker_core_container.announce_handler.clone(),
             scrape_handler: tracker_core_container.scrape_handler.clone(),
             whitelist_authorization: tracker_core_container.whitelist_authorization.clone(),
             authentication_service: tracker_core_container.authentication_service.clone(),
 
-            http_stats_event_sender: http_stats_event_sender.clone(),
-            http_stats_repository: http_stats_repository.clone(),
-        })
-    }
-
-    #[must_use]
-    pub fn initialize(core_config: &Arc<Core>, http_tracker_config: &Arc<HttpTracker>) -> Arc<Self> {
-        let tracker_core_container = TrackerCoreContainer::initialize(core_config);
-
-        // HTTP stats
-        let (http_stats_event_sender, http_stats_repository) = statistics::setup::factory(core_config.tracker_usage_statistics);
-        let http_stats_event_sender = Arc::new(http_stats_event_sender);
-        let http_stats_repository = Arc::new(http_stats_repository);
-
-        Arc::new(Self {
             http_tracker_config: http_tracker_config.clone(),
-
-            core_config: core_config.clone(),
-            announce_handler: tracker_core_container.announce_handler.clone(),
-            scrape_handler: tracker_core_container.scrape_handler.clone(),
-            whitelist_authorization: tracker_core_container.whitelist_authorization.clone(),
-            authentication_service: tracker_core_container.authentication_service.clone(),
-
             http_stats_event_sender: http_stats_event_sender.clone(),
             http_stats_repository: http_stats_repository.clone(),
         })
