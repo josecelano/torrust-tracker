@@ -14,7 +14,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum_server::tls_rustls::RustlsConfig;
-use bittorrent_http_tracker_core::container::HttpTrackerContainer;
+use bittorrent_http_tracker_core::container::HttpTrackerCoreContainer;
 use tokio::task::JoinHandle;
 use torrust_axum_http_tracker_server::server::{HttpServer, Launcher};
 use torrust_axum_http_tracker_server::Version;
@@ -32,7 +32,7 @@ use tracing::instrument;
 /// It would panic if the `config::HttpTracker` struct would contain inappropriate values.
 #[instrument(skip(http_tracker_container, form))]
 pub async fn start_job(
-    http_tracker_container: Arc<HttpTrackerContainer>,
+    http_tracker_container: Arc<HttpTrackerCoreContainer>,
     form: ServiceRegistrationForm,
     version: Version,
 ) -> Option<JoinHandle<()>> {
@@ -52,7 +52,7 @@ pub async fn start_job(
 async fn start_v1(
     socket: SocketAddr,
     tls: Option<RustlsConfig>,
-    http_tracker_container: Arc<HttpTrackerContainer>,
+    http_tracker_container: Arc<HttpTrackerCoreContainer>,
     form: ServiceRegistrationForm,
 ) -> JoinHandle<()> {
     let server = HttpServer::new(Launcher::new(socket, tls))
@@ -77,7 +77,7 @@ async fn start_v1(
 mod tests {
     use std::sync::Arc;
 
-    use bittorrent_http_tracker_core::container::HttpTrackerContainer;
+    use bittorrent_http_tracker_core::container::HttpTrackerCoreContainer;
     use torrust_axum_http_tracker_server::Version;
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
@@ -94,7 +94,7 @@ mod tests {
 
         initialize_global_services(&cfg);
 
-        let http_tracker_container = HttpTrackerContainer::initialize(&core_config, &http_tracker_config);
+        let http_tracker_container = HttpTrackerCoreContainer::initialize(&core_config, &http_tracker_config);
 
         let version = Version::V1;
 

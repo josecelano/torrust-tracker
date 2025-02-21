@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bittorrent_http_tracker_core::container::HttpTrackerContainer;
+use bittorrent_http_tracker_core::container::HttpTrackerCoreContainer;
 use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::authentication::handler::KeysHandler;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
@@ -44,8 +44,8 @@ pub struct AppContainer {
 
 impl AppContainer {
     #[must_use]
-    pub fn http_tracker_container(&self, http_tracker_config: &Arc<HttpTracker>) -> HttpTrackerContainer {
-        HttpTrackerContainer {
+    pub fn http_tracker_container(&self, http_tracker_config: &Arc<HttpTracker>) -> HttpTrackerCoreContainer {
+        HttpTrackerCoreContainer {
             core_config: self.core_config.clone(),
             announce_handler: self.announce_handler.clone(),
             scrape_handler: self.scrape_handler.clone(),

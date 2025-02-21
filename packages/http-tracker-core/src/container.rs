@@ -9,7 +9,7 @@ use torrust_tracker_configuration::{Core, HttpTracker};
 
 use crate::statistics;
 
-pub struct HttpTrackerContainer {
+pub struct HttpTrackerCoreContainer {
     // todo: replace with TrackerCoreContainer
     pub core_config: Arc<Core>,
     pub announce_handler: Arc<AnnounceHandler>,
@@ -22,7 +22,7 @@ pub struct HttpTrackerContainer {
     pub http_stats_repository: Arc<statistics::repository::Repository>,
 }
 
-impl HttpTrackerContainer {
+impl HttpTrackerCoreContainer {
     #[must_use]
     pub fn initialize_from(
         tracker_core_container: &Arc<TrackerCoreContainer>,

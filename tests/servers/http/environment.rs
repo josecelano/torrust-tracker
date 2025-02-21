@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bittorrent_http_tracker_core::container::HttpTrackerContainer;
+use bittorrent_http_tracker_core::container::HttpTrackerCoreContainer;
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::container::TrackerCoreContainer;
 use futures::executor::block_on;
@@ -35,10 +35,10 @@ impl Environment<Stopped> {
 
         let container = Arc::new(EnvContainer::initialize(configuration));
 
-        let bind_to = container.http_tracker_container.http_tracker_config.bind_address;
+        let bind_to = container.http_tracker_core_container.http_tracker_config.bind_address;
 
         let tls = block_on(make_rust_tls(
-            &container.http_tracker_container.http_tracker_config.tsl_config,
+            &container.http_tracker_core_container.http_tracker_config.tsl_config,
         ))
         .map(|tls| tls.expect("tls config failed"));
 
@@ -58,7 +58,7 @@ impl Environment<Stopped> {
             registar: self.registar.clone(),
             server: self
                 .server
-                .start(self.container.http_tracker_container.clone(), self.registar.give_form())
+                .start(self.container.http_tracker_core_container.clone(), self.registar.give_form())
                 .await
                 .unwrap(),
         }
@@ -85,7 +85,7 @@ impl Environment<Running> {
 
 pub struct EnvContainer {
     pub tracker_core_container: Arc<TrackerCoreContainer>,
-    pub http_tracker_container: Arc<HttpTrackerContainer>,
+    pub http_tracker_core_container: Arc<HttpTrackerCoreContainer>,
 }
 
 impl EnvContainer {
@@ -98,11 +98,11 @@ impl EnvContainer {
         let http_tracker_config = Arc::new(http_tracker_config[0].clone());
 
         let tracker_core_container = Arc::new(TrackerCoreContainer::initialize(&core_config));
-        let http_tracker_container = HttpTrackerContainer::initialize_from(&tracker_core_container, &http_tracker_config);
+        let http_tracker_container = HttpTrackerCoreContainer::initialize_from(&tracker_core_container, &http_tracker_config);
 
         Self {
             tracker_core_container,
-            http_tracker_container,
+            http_tracker_core_container: http_tracker_container,
         }
     }
 }
