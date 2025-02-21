@@ -59,12 +59,14 @@ impl Environment<Stopped> {
         let server = Server::new(Spawner::new(bind_to));
 
         let udp_tracker_container = Arc::new(UdpTrackerCoreContainer {
-            udp_tracker_config: env_container.udp_tracker_config.clone(),
             core_config: env_container.core_config.clone(),
             announce_handler: env_container.udp_tracker_core_container.announce_handler.clone(),
             scrape_handler: env_container.udp_tracker_core_container.scrape_handler.clone(),
             whitelist_authorization: env_container.udp_tracker_core_container.whitelist_authorization.clone(),
+
+            udp_tracker_config: env_container.udp_tracker_config.clone(),
             udp_stats_event_sender: env_container.udp_tracker_core_container.udp_stats_event_sender.clone(),
+            udp_stats_repository: env_container.udp_tracker_core_container.udp_stats_repository.clone(),
             ban_service: env_container.udp_tracker_core_container.ban_service.clone(),
         });
 
@@ -170,12 +172,14 @@ impl EnvContainer {
         let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
 
         let udp_tracker_container = Arc::new(UdpTrackerCoreContainer {
-            udp_tracker_config: udp_tracker_config.clone(),
             core_config: core_config.clone(),
             announce_handler: announce_handler.clone(),
             scrape_handler: scrape_handler.clone(),
             whitelist_authorization: whitelist_authorization.clone(),
+
+            udp_tracker_config: udp_tracker_config.clone(),
             udp_stats_event_sender: udp_stats_event_sender.clone(),
+            udp_stats_repository: udp_stats_repository.clone(),
             ban_service: ban_service.clone(),
         });
 

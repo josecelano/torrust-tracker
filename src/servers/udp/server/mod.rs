@@ -57,7 +57,7 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use bittorrent_udp_tracker_core::container::initialize_udt_tracker_container;
+    use bittorrent_udp_tracker_core::container::UdpTrackerCoreContainer;
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
@@ -87,7 +87,7 @@ mod tests {
 
         let stopped = Server::new(Spawner::new(bind_to));
 
-        let udp_tracker_container = initialize_udt_tracker_container(&core_config, &udp_tracker_config);
+        let udp_tracker_container = UdpTrackerCoreContainer::initialize(&core_config, &udp_tracker_config);
 
         let started = stopped
             .start(udp_tracker_container, register.give_form(), config.cookie_lifetime)
@@ -121,7 +121,7 @@ mod tests {
 
         let stopped = Server::new(Spawner::new(bind_to));
 
-        let udp_tracker_container = initialize_udt_tracker_container(&core_config, &udp_tracker_config);
+        let udp_tracker_container = UdpTrackerCoreContainer::initialize(&core_config, &udp_tracker_config);
 
         let started = stopped
             .start(
