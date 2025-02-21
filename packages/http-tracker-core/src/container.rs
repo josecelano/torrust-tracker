@@ -24,40 +24,39 @@ pub struct HttpTrackerContainer {
     pub authentication_service: Arc<AuthenticationService>,
 }
 
-#[must_use]
-pub fn initialize_http_tracker_container(
-    core_config: &Arc<Core>,
-    http_tracker_config: &Arc<HttpTracker>,
-) -> Arc<HttpTrackerContainer> {
-    // HTTP stats
-    let (http_stats_event_sender, _http_stats_repository) = statistics::setup::factory(core_config.tracker_usage_statistics);
-    let http_stats_event_sender = Arc::new(http_stats_event_sender);
+impl HttpTrackerContainer {
+    #[must_use]
+    pub fn initialize(core_config: &Arc<Core>, http_tracker_config: &Arc<HttpTracker>) -> Arc<Self> {
+        // HTTP stats
+        let (http_stats_event_sender, _http_stats_repository) = statistics::setup::factory(core_config.tracker_usage_statistics);
+        let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
-    let database = initialize_database(core_config);
-    let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
-    let whitelist_authorization = Arc::new(WhitelistAuthorization::new(core_config, &in_memory_whitelist.clone()));
-    let in_memory_key_repository = Arc::new(InMemoryKeyRepository::default());
-    let authentication_service = Arc::new(AuthenticationService::new(core_config, &in_memory_key_repository));
+        let database = initialize_database(core_config);
+        let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
+        let whitelist_authorization = Arc::new(WhitelistAuthorization::new(core_config, &in_memory_whitelist.clone()));
+        let in_memory_key_repository = Arc::new(InMemoryKeyRepository::default());
+        let authentication_service = Arc::new(AuthenticationService::new(core_config, &in_memory_key_repository));
 
-    let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
-    let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
+        let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
+        let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
 
-    let announce_handler = Arc::new(AnnounceHandler::new(
-        core_config,
-        &whitelist_authorization,
-        &in_memory_torrent_repository,
-        &db_torrent_repository,
-    ));
+        let announce_handler = Arc::new(AnnounceHandler::new(
+            core_config,
+            &whitelist_authorization,
+            &in_memory_torrent_repository,
+            &db_torrent_repository,
+        ));
 
-    let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
+        let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
 
-    Arc::new(HttpTrackerContainer {
-        http_tracker_config: http_tracker_config.clone(),
-        core_config: core_config.clone(),
-        announce_handler: announce_handler.clone(),
-        scrape_handler: scrape_handler.clone(),
-        whitelist_authorization: whitelist_authorization.clone(),
-        http_stats_event_sender: http_stats_event_sender.clone(),
-        authentication_service: authentication_service.clone(),
-    })
+        Arc::new(Self {
+            http_tracker_config: http_tracker_config.clone(),
+            core_config: core_config.clone(),
+            announce_handler: announce_handler.clone(),
+            scrape_handler: scrape_handler.clone(),
+            whitelist_authorization: whitelist_authorization.clone(),
+            http_stats_event_sender: http_stats_event_sender.clone(),
+            authentication_service: authentication_service.clone(),
+        })
+    }
 }

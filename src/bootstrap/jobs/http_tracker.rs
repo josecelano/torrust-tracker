@@ -77,7 +77,7 @@ async fn start_v1(
 mod tests {
     use std::sync::Arc;
 
-    use bittorrent_http_tracker_core::container::initialize_http_tracker_container;
+    use bittorrent_http_tracker_core::container::HttpTrackerContainer;
     use torrust_axum_http_tracker_server::Version;
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
@@ -94,7 +94,7 @@ mod tests {
 
         initialize_global_services(&cfg);
 
-        let http_tracker_container = initialize_http_tracker_container(&core_config, &http_tracker_config);
+        let http_tracker_container = HttpTrackerContainer::initialize(&core_config, &http_tracker_config);
 
         let version = Version::V1;
 
