@@ -46,13 +46,15 @@ impl AppContainer {
     #[must_use]
     pub fn http_tracker_container(&self, http_tracker_config: &Arc<HttpTracker>) -> HttpTrackerContainer {
         HttpTrackerContainer {
-            http_tracker_config: http_tracker_config.clone(),
             core_config: self.core_config.clone(),
             announce_handler: self.announce_handler.clone(),
             scrape_handler: self.scrape_handler.clone(),
             whitelist_authorization: self.whitelist_authorization.clone(),
-            http_stats_event_sender: self.http_stats_event_sender.clone(),
             authentication_service: self.authentication_service.clone(),
+
+            http_tracker_config: http_tracker_config.clone(),
+            http_stats_event_sender: self.http_stats_event_sender.clone(),
+            http_stats_repository: self.http_stats_repository.clone(),
         }
     }
 

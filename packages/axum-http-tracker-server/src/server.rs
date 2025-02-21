@@ -268,9 +268,10 @@ mod tests {
         let http_tracker_config = Arc::new(http_tracker_config.clone());
 
         // HTTP stats
-        let (http_stats_event_sender, _http_stats_repository) =
+        let (http_stats_event_sender, http_stats_repository) =
             bittorrent_http_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
         let http_stats_event_sender = Arc::new(http_stats_event_sender);
+        let http_stats_repository = Arc::new(http_stats_repository);
 
         let database = initialize_database(&configuration.core);
         let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
@@ -294,12 +295,14 @@ mod tests {
 
         HttpTrackerContainer {
             core_config,
-            http_tracker_config,
             announce_handler,
             scrape_handler,
             whitelist_authorization,
-            http_stats_event_sender,
             authentication_service,
+
+            http_tracker_config,
+            http_stats_event_sender,
+            http_stats_repository,
         }
     }
 
