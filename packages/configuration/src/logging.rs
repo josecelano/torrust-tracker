@@ -13,8 +13,9 @@
 //! Refer to the [configuration crate documentation](https://docs.rs/torrust-tracker-configuration) to know how to change log settings.
 use std::sync::Once;
 
-use torrust_tracker_configuration::{Logging, Threshold};
 use tracing::level_filters::LevelFilter;
+
+use crate::{Logging, Threshold};
 
 static INIT: Once = Once::new();
 

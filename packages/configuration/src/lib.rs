@@ -4,6 +4,7 @@
 //! Torrust Tracker, which is a `BitTorrent` tracker server.
 //!
 //! The current version for configuration is [`v2_0_0`].
+pub mod logging;
 pub mod v2_0_0;
 pub mod validator;
 

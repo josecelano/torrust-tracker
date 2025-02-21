@@ -33,11 +33,10 @@ use bittorrent_udp_tracker_core::MAX_CONNECTION_ID_ERRORS_PER_IP;
 use tokio::sync::RwLock;
 use torrust_tracker_clock::static_time;
 use torrust_tracker_configuration::validator::Validator;
-use torrust_tracker_configuration::Configuration;
+use torrust_tracker_configuration::{logging, Configuration, Logging};
 use tracing::instrument;
 
 use super::config::initialize_configuration;
-use crate::bootstrap;
 use crate::container::AppContainer;
 
 /// It loads the configuration from the environment and builds app container.
@@ -82,7 +81,7 @@ pub fn check_seed() {
 #[instrument(skip())]
 pub fn initialize_global_services(configuration: &Configuration) {
     initialize_static();
-    initialize_logging(configuration);
+    initialize_logging(&configuration.logging);
 }
 
 /// It initializes the IoC Container.
@@ -179,8 +178,8 @@ pub fn initialize_static() {
 
 /// It initializes the log threshold, format and channel.
 ///
-/// See [the logging setup](crate::bootstrap::logging::setup) for more info about logging.
-#[instrument(skip(config))]
-pub fn initialize_logging(config: &Configuration) {
-    bootstrap::logging::setup(&config.logging);
+/// See [the logging setup](torrust_tracker_configuration::logging::setup) for more info about logging.
+#[instrument(skip(logging_config))]
+pub fn initialize_logging(logging_config: &Logging) {
+    logging::setup(logging_config);
 }
