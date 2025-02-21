@@ -11,6 +11,7 @@ use std::time::Instant;
 
 use announce::handle_announce;
 use aquatic_udp_protocol::{Request, Response, TransactionId};
+use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
 use bittorrent_udp_tracker_core::services::announce::UdpAnnounceError;
 use connect::handle_connect;
 use error::handle_error;
@@ -20,7 +21,6 @@ use tracing::{instrument, Level};
 use uuid::Uuid;
 
 use super::RawRequest;
-use crate::container::UdpTrackerContainer;
 use crate::servers::udp::error::Error;
 use crate::shared::bit_torrent::common::MAX_SCRAPE_TORRENTS;
 use crate::CurrentClock;

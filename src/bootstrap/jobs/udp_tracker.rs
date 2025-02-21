@@ -8,12 +8,12 @@
 //! > for the configuration options.
 use std::sync::Arc;
 
+use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
 use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use tokio::task::JoinHandle;
 use torrust_server_lib::registar::ServiceRegistrationForm;
 use tracing::instrument;
 
-use crate::container::UdpTrackerContainer;
 use crate::servers::udp::server::spawner::Spawner;
 use crate::servers::udp::server::Server;
 

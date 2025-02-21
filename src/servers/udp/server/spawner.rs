@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
 use derive_more::derive::Display;
 use derive_more::Constructor;
 use tokio::sync::oneshot;
@@ -10,7 +11,6 @@ use tokio::task::JoinHandle;
 use torrust_server_lib::signals::{Halted, Started};
 
 use super::launcher::Launcher;
-use crate::container::UdpTrackerContainer;
 
 #[derive(Constructor, Copy, Clone, Debug, Display)]
 #[display("(with socket): {bind_to}")]

@@ -10,13 +10,13 @@ use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepo
 use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentTorrentRepository;
 use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
+use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
 use bittorrent_udp_tracker_core::services::banning::BanService;
 use bittorrent_udp_tracker_core::{statistics, MAX_CONNECTION_ID_ERRORS_PER_IP};
 use tokio::sync::RwLock;
 use torrust_server_lib::registar::Registar;
 use torrust_tracker_configuration::{Configuration, Core, UdpTracker, DEFAULT_TIMEOUT};
 use torrust_tracker_lib::bootstrap::app::initialize_global_services;
-use torrust_tracker_lib::container::UdpTrackerContainer;
 use torrust_tracker_lib::servers::udp::server::spawner::Spawner;
 use torrust_tracker_lib::servers::udp::server::states::{Running, Stopped};
 use torrust_tracker_lib::servers::udp::server::Server;

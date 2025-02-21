@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bittorrent_tracker_client::udp::client::check;
+use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
 use bittorrent_udp_tracker_core::{self, statistics, UDP_TRACKER_LOG_TARGET};
 use derive_more::Constructor;
 use futures_util::StreamExt;
@@ -15,7 +16,6 @@ use torrust_server_lib::signals::{shutdown_signal_with_message, Halted, Started}
 use tracing::instrument;
 
 use super::request_buffer::ActiveRequests;
-use crate::container::UdpTrackerContainer;
 use crate::servers::udp::server::bound_socket::BoundSocket;
 use crate::servers::udp::server::processor::Processor;
 use crate::servers::udp::server::receiver::Receiver;

@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
 use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use derive_more::derive::Display;
 use derive_more::Constructor;
@@ -13,7 +14,6 @@ use tracing::{instrument, Level};
 
 use super::spawner::Spawner;
 use super::{Server, UdpError};
-use crate::container::UdpTrackerContainer;
 use crate::servers::udp::server::launcher::Launcher;
 
 /// A UDP server instance controller with no UDP instance running.
