@@ -2,12 +2,20 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use bittorrent_primitives::info_hash::InfoHash;
+use bittorrent_tracker_core::announce_handler::AnnounceHandler;
+use bittorrent_tracker_core::databases::setup::initialize_database;
 use bittorrent_tracker_core::databases::Database;
+use bittorrent_tracker_core::scrape_handler::ScrapeHandler;
 use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepository;
-use bittorrent_udp_tracker_core::statistics;
+use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentTorrentRepository;
+use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
+use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
+use bittorrent_udp_tracker_core::services::banning::BanService;
+use bittorrent_udp_tracker_core::{statistics, MAX_CONNECTION_ID_ERRORS_PER_IP};
+use tokio::sync::RwLock;
 use torrust_server_lib::registar::Registar;
-use torrust_tracker_configuration::{Configuration, DEFAULT_TIMEOUT};
-use torrust_tracker_lib::bootstrap::app::{initialize_app_container, initialize_global_services};
+use torrust_tracker_configuration::{Configuration, Core, UdpTracker, DEFAULT_TIMEOUT};
+use torrust_tracker_lib::bootstrap::app::initialize_global_services;
 use torrust_tracker_lib::container::UdpTrackerContainer;
 use torrust_tracker_lib::servers::udp::server::spawner::Spawner;
 use torrust_tracker_lib::servers::udp::server::states::{Running, Stopped};
@@ -44,32 +52,28 @@ impl Environment<Stopped> {
     pub fn new(configuration: &Arc<Configuration>) -> Self {
         initialize_global_services(configuration);
 
-        let app_container = initialize_app_container(configuration);
+        let env_container = EnvContainer::initialize(configuration);
 
-        let udp_tracker_configurations = configuration.udp_trackers.clone().expect("missing UDP tracker configuration");
-
-        let udp_tracker_config = Arc::new(udp_tracker_configurations[0].clone());
-
-        let bind_to = udp_tracker_config.bind_address;
+        let bind_to = env_container.udp_tracker_config.bind_address;
 
         let server = Server::new(Spawner::new(bind_to));
 
         let udp_tracker_container = Arc::new(UdpTrackerContainer {
-            udp_tracker_config: udp_tracker_config.clone(),
-            core_config: app_container.core_config.clone(),
-            announce_handler: app_container.announce_handler.clone(),
-            scrape_handler: app_container.scrape_handler.clone(),
-            whitelist_authorization: app_container.whitelist_authorization.clone(),
-            udp_stats_event_sender: app_container.udp_stats_event_sender.clone(),
-            ban_service: app_container.ban_service.clone(),
+            udp_tracker_config: env_container.udp_tracker_config.clone(),
+            core_config: env_container.core_config.clone(),
+            announce_handler: env_container.udp_tracker_container.announce_handler.clone(),
+            scrape_handler: env_container.udp_tracker_container.scrape_handler.clone(),
+            whitelist_authorization: env_container.udp_tracker_container.whitelist_authorization.clone(),
+            udp_stats_event_sender: env_container.udp_tracker_container.udp_stats_event_sender.clone(),
+            ban_service: env_container.udp_tracker_container.ban_service.clone(),
         });
 
         Self {
             udp_tracker_container,
 
-            database: app_container.database.clone(),
-            in_memory_torrent_repository: app_container.in_memory_torrent_repository.clone(),
-            udp_stats_repository: app_container.udp_stats_repository.clone(),
+            database: env_container.database.clone(),
+            in_memory_torrent_repository: env_container.in_memory_torrent_repository.clone(),
+            udp_stats_repository: env_container.udp_stats_repository.clone(),
 
             registar: Registar::default(),
             server,
@@ -124,6 +128,66 @@ impl Environment<Running> {
 
     pub fn bind_address(&self) -> SocketAddr {
         self.server.state.local_addr
+    }
+}
+
+pub struct EnvContainer {
+    pub core_config: Arc<Core>,
+    pub udp_tracker_config: Arc<UdpTracker>,
+    pub udp_tracker_container: Arc<UdpTrackerContainer>,
+
+    pub database: Arc<Box<dyn Database>>,
+    pub in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
+    pub udp_stats_repository: Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
+}
+
+impl EnvContainer {
+    pub fn initialize(configuration: &Configuration) -> Self {
+        let core_config = Arc::new(configuration.core.clone());
+        let udp_tracker_configurations = configuration.udp_trackers.clone().expect("missing UDP tracker configuration");
+        let udp_tracker_config = Arc::new(udp_tracker_configurations[0].clone());
+
+        // UDP stats
+        let (udp_stats_event_sender, udp_stats_repository) =
+            bittorrent_udp_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
+        let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
+        let udp_stats_repository = Arc::new(udp_stats_repository);
+
+        let ban_service = Arc::new(RwLock::new(BanService::new(MAX_CONNECTION_ID_ERRORS_PER_IP)));
+        let database = initialize_database(&configuration.core);
+        let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
+        let whitelist_authorization = Arc::new(WhitelistAuthorization::new(&configuration.core, &in_memory_whitelist.clone()));
+        let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
+        let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
+
+        let announce_handler = Arc::new(AnnounceHandler::new(
+            &configuration.core,
+            &whitelist_authorization,
+            &in_memory_torrent_repository,
+            &db_torrent_repository,
+        ));
+
+        let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
+
+        let udp_tracker_container = Arc::new(UdpTrackerContainer {
+            udp_tracker_config: udp_tracker_config.clone(),
+            core_config: core_config.clone(),
+            announce_handler: announce_handler.clone(),
+            scrape_handler: scrape_handler.clone(),
+            whitelist_authorization: whitelist_authorization.clone(),
+            udp_stats_event_sender: udp_stats_event_sender.clone(),
+            ban_service: ban_service.clone(),
+        });
+
+        Self {
+            core_config,
+            udp_tracker_config,
+            udp_tracker_container,
+
+            database,
+            in_memory_torrent_repository,
+            udp_stats_repository,
+        }
     }
 }
 

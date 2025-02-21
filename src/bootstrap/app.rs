@@ -33,11 +33,11 @@ use bittorrent_udp_tracker_core::MAX_CONNECTION_ID_ERRORS_PER_IP;
 use tokio::sync::RwLock;
 use torrust_tracker_clock::static_time;
 use torrust_tracker_configuration::validator::Validator;
-use torrust_tracker_configuration::{logging, Configuration, Logging};
+use torrust_tracker_configuration::{logging, Configuration, Core, HttpApi, Logging, UdpTracker};
 use tracing::instrument;
 
 use super::config::initialize_configuration;
-use crate::container::AppContainer;
+use crate::container::{AppContainer, HttpApiContainer, UdpTrackerContainer};
 
 /// It loads the configuration from the environment and builds app container.
 ///
@@ -153,6 +153,79 @@ pub fn initialize_app_container(configuration: &Configuration) -> AppContainer {
         db_torrent_repository,
         torrents_manager,
     }
+}
+
+#[must_use]
+pub fn initialize_http_api_container(core_config: &Arc<Core>, http_api_config: &Arc<HttpApi>) -> Arc<HttpApiContainer> {
+    // HTTP stats
+    let (_http_stats_event_sender, http_stats_repository) =
+        bittorrent_http_tracker_core::statistics::setup::factory(core_config.tracker_usage_statistics);
+    let http_stats_repository = Arc::new(http_stats_repository);
+
+    // UDP stats
+    let (_udp_stats_event_sender, udp_stats_repository) =
+        bittorrent_udp_tracker_core::statistics::setup::factory(core_config.tracker_usage_statistics);
+    let udp_stats_repository = Arc::new(udp_stats_repository);
+
+    let ban_service = Arc::new(RwLock::new(BanService::new(MAX_CONNECTION_ID_ERRORS_PER_IP)));
+    let database = initialize_database(core_config);
+    let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
+    let whitelist_manager = initialize_whitelist_manager(database.clone(), in_memory_whitelist.clone());
+    let db_key_repository = Arc::new(DatabaseKeyRepository::new(&database));
+    let in_memory_key_repository = Arc::new(InMemoryKeyRepository::default());
+    let keys_handler = Arc::new(KeysHandler::new(
+        &db_key_repository.clone(),
+        &in_memory_key_repository.clone(),
+    ));
+    let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
+
+    Arc::new(HttpApiContainer {
+        http_api_config: http_api_config.clone(),
+        core_config: core_config.clone(),
+        in_memory_torrent_repository: in_memory_torrent_repository.clone(),
+        keys_handler: keys_handler.clone(),
+        whitelist_manager: whitelist_manager.clone(),
+        ban_service: ban_service.clone(),
+        http_stats_repository: http_stats_repository.clone(),
+        udp_stats_repository: udp_stats_repository.clone(),
+    })
+}
+
+#[must_use]
+pub fn initialize_udt_tracker_container(
+    core_config: &Arc<Core>,
+    udp_tracker_config: &Arc<UdpTracker>,
+) -> Arc<UdpTrackerContainer> {
+    // UDP stats
+    let (udp_stats_event_sender, _udp_stats_repository) =
+        bittorrent_udp_tracker_core::statistics::setup::factory(core_config.tracker_usage_statistics);
+    let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
+
+    let ban_service = Arc::new(RwLock::new(BanService::new(MAX_CONNECTION_ID_ERRORS_PER_IP)));
+    let database = initialize_database(core_config);
+    let in_memory_whitelist = Arc::new(InMemoryWhitelist::default());
+    let whitelist_authorization = Arc::new(WhitelistAuthorization::new(core_config, &in_memory_whitelist.clone()));
+    let in_memory_torrent_repository = Arc::new(InMemoryTorrentRepository::default());
+    let db_torrent_repository = Arc::new(DatabasePersistentTorrentRepository::new(&database));
+
+    let announce_handler = Arc::new(AnnounceHandler::new(
+        core_config,
+        &whitelist_authorization,
+        &in_memory_torrent_repository,
+        &db_torrent_repository,
+    ));
+
+    let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
+
+    Arc::new(UdpTrackerContainer {
+        udp_tracker_config: udp_tracker_config.clone(),
+        core_config: core_config.clone(),
+        announce_handler: announce_handler.clone(),
+        scrape_handler: scrape_handler.clone(),
+        whitelist_authorization: whitelist_authorization.clone(),
+        udp_stats_event_sender: udp_stats_event_sender.clone(),
+        ban_service: ban_service.clone(),
+    })
 }
 
 /// It initializes the application static values.

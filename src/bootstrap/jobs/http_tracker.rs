@@ -77,24 +77,24 @@ async fn start_v1(
 mod tests {
     use std::sync::Arc;
 
+    use torrust_axum_http_tracker_server::container::initialize_http_tracker_container;
     use torrust_axum_http_tracker_server::Version;
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
-    use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
+    use crate::bootstrap::app::initialize_global_services;
     use crate::bootstrap::jobs::http_tracker::start_job;
 
     #[tokio::test]
     async fn it_should_start_http_tracker() {
         let cfg = Arc::new(ephemeral_public());
+        let core_config = Arc::new(cfg.core.clone());
         let http_tracker = cfg.http_trackers.clone().expect("missing HTTP tracker configuration");
         let http_tracker_config = Arc::new(http_tracker[0].clone());
 
         initialize_global_services(&cfg);
 
-        let app_container = Arc::new(initialize_app_container(&cfg));
-
-        let http_tracker_container = Arc::new(app_container.http_tracker_container(&http_tracker_config));
+        let http_tracker_container = initialize_http_tracker_container(&core_config, &http_tracker_config);
 
         let version = Version::V1;
 

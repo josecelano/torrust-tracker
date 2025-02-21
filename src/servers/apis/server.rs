@@ -298,18 +298,16 @@ mod tests {
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
-    use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
-    use crate::container::HttpApiContainer;
+    use crate::bootstrap::app::{initialize_global_services, initialize_http_api_container};
     use crate::servers::apis::server::{ApiServer, Launcher};
 
     #[tokio::test]
     async fn it_should_be_able_to_start_and_stop() {
         let cfg = Arc::new(ephemeral_public());
+        let core_config = Arc::new(cfg.core.clone());
         let http_api_config = Arc::new(cfg.http_api.clone().unwrap());
 
         initialize_global_services(&cfg);
-
-        let app_container = Arc::new(initialize_app_container(&cfg));
 
         let bind_to = http_api_config.bind_address;
 
@@ -323,7 +321,7 @@ mod tests {
 
         let register = &Registar::default();
 
-        let http_api_container = Arc::new(HttpApiContainer::from_app_container(&http_api_config, &app_container));
+        let http_api_container = initialize_http_api_container(&core_config, &http_api_config);
 
         let started = stopped
             .start(http_api_container, register.give_form(), access_tokens)

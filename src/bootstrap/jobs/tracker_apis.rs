@@ -100,21 +100,19 @@ mod tests {
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
-    use crate::bootstrap::app::{initialize_app_container, initialize_global_services};
+    use crate::bootstrap::app::{initialize_global_services, initialize_http_api_container};
     use crate::bootstrap::jobs::tracker_apis::start_job;
-    use crate::container::HttpApiContainer;
     use crate::servers::apis::Version;
 
     #[tokio::test]
     async fn it_should_start_http_tracker() {
         let cfg = Arc::new(ephemeral_public());
+        let core_config = Arc::new(cfg.core.clone());
         let http_api_config = Arc::new(cfg.http_api.clone().unwrap());
 
         initialize_global_services(&cfg);
 
-        let app_container = Arc::new(initialize_app_container(&cfg));
-
-        let http_api_container = Arc::new(HttpApiContainer::from_app_container(&http_api_config, &app_container));
+        let http_api_container = initialize_http_api_container(&core_config, &http_api_config);
 
         let version = Version::V1;
 

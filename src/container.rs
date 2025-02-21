@@ -50,6 +50,33 @@ impl AppContainer {
             authentication_service: self.authentication_service.clone(),
         }
     }
+
+    #[must_use]
+    pub fn udp_tracker_container(&self, udp_tracker_config: &Arc<UdpTracker>) -> UdpTrackerContainer {
+        UdpTrackerContainer {
+            udp_tracker_config: udp_tracker_config.clone(),
+            core_config: self.core_config.clone(),
+            announce_handler: self.announce_handler.clone(),
+            scrape_handler: self.scrape_handler.clone(),
+            whitelist_authorization: self.whitelist_authorization.clone(),
+            udp_stats_event_sender: self.udp_stats_event_sender.clone(),
+            ban_service: self.ban_service.clone(),
+        }
+    }
+
+    #[must_use]
+    pub fn http_api_container(&self, http_api_config: &Arc<HttpApi>) -> HttpApiContainer {
+        HttpApiContainer {
+            http_api_config: http_api_config.clone(),
+            core_config: self.core_config.clone(),
+            in_memory_torrent_repository: self.in_memory_torrent_repository.clone(),
+            keys_handler: self.keys_handler.clone(),
+            whitelist_manager: self.whitelist_manager.clone(),
+            ban_service: self.ban_service.clone(),
+            http_stats_repository: self.http_stats_repository.clone(),
+            udp_stats_repository: self.udp_stats_repository.clone(),
+        }
+    }
 }
 
 pub struct UdpTrackerContainer {
@@ -62,21 +89,6 @@ pub struct UdpTrackerContainer {
     pub ban_service: Arc<RwLock<BanService>>,
 }
 
-impl UdpTrackerContainer {
-    #[must_use]
-    pub fn from_app_container(udp_tracker_config: &Arc<UdpTracker>, app_container: &Arc<AppContainer>) -> Self {
-        Self {
-            udp_tracker_config: udp_tracker_config.clone(),
-            core_config: app_container.core_config.clone(),
-            announce_handler: app_container.announce_handler.clone(),
-            scrape_handler: app_container.scrape_handler.clone(),
-            whitelist_authorization: app_container.whitelist_authorization.clone(),
-            udp_stats_event_sender: app_container.udp_stats_event_sender.clone(),
-            ban_service: app_container.ban_service.clone(),
-        }
-    }
-}
-
 pub struct HttpApiContainer {
     pub core_config: Arc<Core>,
     pub http_api_config: Arc<HttpApi>,
@@ -86,20 +98,4 @@ pub struct HttpApiContainer {
     pub ban_service: Arc<RwLock<BanService>>,
     pub http_stats_repository: Arc<bittorrent_http_tracker_core::statistics::repository::Repository>,
     pub udp_stats_repository: Arc<bittorrent_udp_tracker_core::statistics::repository::Repository>,
-}
-
-impl HttpApiContainer {
-    #[must_use]
-    pub fn from_app_container(http_api_config: &Arc<HttpApi>, app_container: &Arc<AppContainer>) -> Self {
-        Self {
-            http_api_config: http_api_config.clone(),
-            core_config: app_container.core_config.clone(),
-            in_memory_torrent_repository: app_container.in_memory_torrent_repository.clone(),
-            keys_handler: app_container.keys_handler.clone(),
-            whitelist_manager: app_container.whitelist_manager.clone(),
-            ban_service: app_container.ban_service.clone(),
-            http_stats_repository: app_container.http_stats_repository.clone(),
-            udp_stats_repository: app_container.udp_stats_repository.clone(),
-        }
-    }
 }
