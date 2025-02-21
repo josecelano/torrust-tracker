@@ -19,7 +19,7 @@ use torrust_tracker_configuration::{logging, Configuration};
 use tracing::instrument;
 
 use super::config::initialize_configuration;
-use crate::container::{initialize_app_container, AppContainer};
+use crate::container::AppContainer;
 
 /// It loads the configuration from the environment and builds app container.
 ///
@@ -42,7 +42,7 @@ pub fn setup() -> (Configuration, AppContainer) {
 
     tracing::info!("Configuration:\n{}", configuration.clone().mask_secrets().to_json());
 
-    let app_container = initialize_app_container(&configuration);
+    let app_container = AppContainer::initialize(&configuration);
 
     (configuration, app_container)
 }

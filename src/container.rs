@@ -47,6 +47,47 @@ pub struct AppContainer {
 }
 
 impl AppContainer {
+    #[instrument(skip())]
+    pub fn initialize(configuration: &Configuration) -> AppContainer {
+        let core_config = Arc::new(configuration.core.clone());
+
+        let tracker_core_container = TrackerCoreContainer::initialize(&core_config);
+
+        // HTTP stats
+        let (http_stats_event_sender, http_stats_repository) =
+            bittorrent_http_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
+        let http_stats_event_sender = Arc::new(http_stats_event_sender);
+        let http_stats_repository = Arc::new(http_stats_repository);
+
+        // UDP stats
+        let (udp_stats_event_sender, udp_stats_repository) =
+            bittorrent_udp_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
+        let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
+        let udp_stats_repository = Arc::new(udp_stats_repository);
+
+        let ban_service = Arc::new(RwLock::new(BanService::new(MAX_CONNECTION_ID_ERRORS_PER_IP)));
+
+        AppContainer {
+            core_config,
+            database: tracker_core_container.database,
+            announce_handler: tracker_core_container.announce_handler,
+            scrape_handler: tracker_core_container.scrape_handler,
+            keys_handler: tracker_core_container.keys_handler,
+            authentication_service: tracker_core_container.authentication_service,
+            in_memory_whitelist: tracker_core_container.in_memory_whitelist,
+            whitelist_authorization: tracker_core_container.whitelist_authorization,
+            whitelist_manager: tracker_core_container.whitelist_manager,
+            in_memory_torrent_repository: tracker_core_container.in_memory_torrent_repository,
+            db_torrent_repository: tracker_core_container.db_torrent_repository,
+            torrents_manager: tracker_core_container.torrents_manager,
+            ban_service,
+            http_stats_event_sender,
+            udp_stats_event_sender,
+            http_stats_repository,
+            udp_stats_repository,
+        }
+    }
+
     #[must_use]
     pub fn http_tracker_container(&self, http_tracker_config: &Arc<HttpTracker>) -> HttpTrackerCoreContainer {
         HttpTrackerCoreContainer {
@@ -89,47 +130,5 @@ impl AppContainer {
             http_stats_repository: self.http_stats_repository.clone(),
             udp_stats_repository: self.udp_stats_repository.clone(),
         }
-    }
-}
-
-/// It initializes the IoC Container.
-#[instrument(skip())]
-pub fn initialize_app_container(configuration: &Configuration) -> AppContainer {
-    let core_config = Arc::new(configuration.core.clone());
-
-    let tracker_core_container = TrackerCoreContainer::initialize(&core_config);
-
-    // HTTP stats
-    let (http_stats_event_sender, http_stats_repository) =
-        bittorrent_http_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
-    let http_stats_event_sender = Arc::new(http_stats_event_sender);
-    let http_stats_repository = Arc::new(http_stats_repository);
-
-    // UDP stats
-    let (udp_stats_event_sender, udp_stats_repository) =
-        bittorrent_udp_tracker_core::statistics::setup::factory(configuration.core.tracker_usage_statistics);
-    let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
-    let udp_stats_repository = Arc::new(udp_stats_repository);
-
-    let ban_service = Arc::new(RwLock::new(BanService::new(MAX_CONNECTION_ID_ERRORS_PER_IP)));
-
-    AppContainer {
-        core_config,
-        database: tracker_core_container.database,
-        announce_handler: tracker_core_container.announce_handler,
-        scrape_handler: tracker_core_container.scrape_handler,
-        keys_handler: tracker_core_container.keys_handler,
-        authentication_service: tracker_core_container.authentication_service,
-        in_memory_whitelist: tracker_core_container.in_memory_whitelist,
-        whitelist_authorization: tracker_core_container.whitelist_authorization,
-        whitelist_manager: tracker_core_container.whitelist_manager,
-        in_memory_torrent_repository: tracker_core_container.in_memory_torrent_repository,
-        db_torrent_repository: tracker_core_container.db_torrent_repository,
-        torrents_manager: tracker_core_container.torrents_manager,
-        ban_service,
-        http_stats_event_sender,
-        udp_stats_event_sender,
-        http_stats_repository,
-        udp_stats_repository,
     }
 }
