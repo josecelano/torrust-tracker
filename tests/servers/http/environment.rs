@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bittorrent_http_tracker_core::container::HttpTrackerContainer;
 use bittorrent_primitives::info_hash::InfoHash;
 use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::authentication::handler::KeysHandler;
@@ -16,7 +17,6 @@ use bittorrent_tracker_core::whitelist::manager::WhitelistManager;
 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
 use bittorrent_tracker_core::whitelist::setup::initialize_whitelist_manager;
 use futures::executor::block_on;
-use torrust_axum_http_tracker_server::container::HttpTrackerContainer;
 use torrust_axum_http_tracker_server::server::{HttpServer, Launcher, Running, Stopped};
 use torrust_axum_server::tsl::make_rust_tls;
 use torrust_server_lib::registar::Registar;

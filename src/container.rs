@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bittorrent_http_tracker_core::container::HttpTrackerContainer;
 use bittorrent_tracker_core::announce_handler::AnnounceHandler;
 use bittorrent_tracker_core::authentication::handler::KeysHandler;
 use bittorrent_tracker_core::authentication::service::AuthenticationService;
@@ -15,7 +16,6 @@ use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist
 use bittorrent_udp_tracker_core::services::banning::BanService;
 use bittorrent_udp_tracker_core::{self, MAX_CONNECTION_ID_ERRORS_PER_IP};
 use tokio::sync::RwLock;
-use torrust_axum_http_tracker_server::container::HttpTrackerContainer;
 use torrust_tracker_configuration::{Configuration, Core, HttpApi, HttpTracker, UdpTracker};
 use tracing::instrument;
 

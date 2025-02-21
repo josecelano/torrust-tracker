@@ -12,13 +12,15 @@ use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
 use torrust_tracker_configuration::{Core, HttpTracker};
 
+use crate::statistics;
+
 pub struct HttpTrackerContainer {
     pub core_config: Arc<Core>,
     pub http_tracker_config: Arc<HttpTracker>,
     pub announce_handler: Arc<AnnounceHandler>,
     pub scrape_handler: Arc<ScrapeHandler>,
     pub whitelist_authorization: Arc<whitelist::authorization::WhitelistAuthorization>,
-    pub http_stats_event_sender: Arc<Option<Box<dyn bittorrent_http_tracker_core::statistics::event::sender::Sender>>>,
+    pub http_stats_event_sender: Arc<Option<Box<dyn statistics::event::sender::Sender>>>,
     pub authentication_service: Arc<AuthenticationService>,
 }
 
@@ -28,8 +30,7 @@ pub fn initialize_http_tracker_container(
     http_tracker_config: &Arc<HttpTracker>,
 ) -> Arc<HttpTrackerContainer> {
     // HTTP stats
-    let (http_stats_event_sender, _http_stats_repository) =
-        bittorrent_http_tracker_core::statistics::setup::factory(core_config.tracker_usage_statistics);
+    let (http_stats_event_sender, _http_stats_repository) = statistics::setup::factory(core_config.tracker_usage_statistics);
     let http_stats_event_sender = Arc::new(http_stats_event_sender);
 
     let database = initialize_database(core_config);

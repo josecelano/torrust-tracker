@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use axum_server::tls_rustls::RustlsConfig;
 use axum_server::Handle;
+use bittorrent_http_tracker_core::container::HttpTrackerContainer;
 use derive_more::Constructor;
 use futures::future::BoxFuture;
 use tokio::sync::oneshot::{Receiver, Sender};
@@ -15,7 +16,6 @@ use torrust_server_lib::signals::{Halted, Started};
 use tracing::instrument;
 
 use super::v1::routes::router;
-use crate::container::HttpTrackerContainer;
 use crate::HTTP_TRACKER_LOG_TARGET;
 
 /// Error that can occur when starting or stopping the HTTP server.
@@ -238,6 +238,7 @@ pub fn check_fn(binding: &SocketAddr) -> ServiceHealthCheckJob {
 mod tests {
     use std::sync::Arc;
 
+    use bittorrent_http_tracker_core::container::HttpTrackerContainer;
     use bittorrent_tracker_core::announce_handler::AnnounceHandler;
     use bittorrent_tracker_core::authentication::key::repository::in_memory::InMemoryKeyRepository;
     use bittorrent_tracker_core::authentication::service;
@@ -252,7 +253,6 @@ mod tests {
     use torrust_tracker_configuration::Configuration;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
-    use crate::container::HttpTrackerContainer;
     use crate::server::{HttpServer, Launcher};
 
     pub fn initialize_container(configuration: &Configuration) -> HttpTrackerContainer {

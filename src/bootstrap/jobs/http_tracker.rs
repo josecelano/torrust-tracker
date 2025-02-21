@@ -14,8 +14,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum_server::tls_rustls::RustlsConfig;
+use bittorrent_http_tracker_core::container::HttpTrackerContainer;
 use tokio::task::JoinHandle;
-use torrust_axum_http_tracker_server::container::HttpTrackerContainer;
 use torrust_axum_http_tracker_server::server::{HttpServer, Launcher};
 use torrust_axum_http_tracker_server::Version;
 use torrust_axum_server::tsl::make_rust_tls;
@@ -77,7 +77,7 @@ async fn start_v1(
 mod tests {
     use std::sync::Arc;
 
-    use torrust_axum_http_tracker_server::container::initialize_http_tracker_container;
+    use bittorrent_http_tracker_core::container::initialize_http_tracker_container;
     use torrust_axum_http_tracker_server::Version;
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;

@@ -9,6 +9,7 @@ use axum::response::Response;
 use axum::routing::get;
 use axum::{BoxError, Router};
 use axum_client_ip::SecureClientIpSource;
+use bittorrent_http_tracker_core::container::HttpTrackerContainer;
 use hyper::{Request, StatusCode};
 use torrust_server_lib::logging::Latency;
 use torrust_tracker_configuration::DEFAULT_TIMEOUT;
@@ -23,7 +24,6 @@ use tower_http::LatencyUnit;
 use tracing::{instrument, Level, Span};
 
 use super::handlers::{announce, health_check, scrape};
-use crate::container::HttpTrackerContainer;
 use crate::HTTP_TRACKER_LOG_TARGET;
 
 /// It adds the routes to the router.
