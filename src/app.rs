@@ -111,7 +111,7 @@ pub async fn start(config: &Configuration, app_container: &Arc<AppContainer>) ->
     // Start HTTP API
     if let Some(http_api_config) = &config.http_api {
         let http_api_config = Arc::new(http_api_config.clone());
-        let http_api_container = Arc::new(app_container.http_api_container(&http_api_config));
+        let http_api_container = Arc::new(app_container.tracker_http_api_container(&http_api_config));
 
         if let Some(job) = tracker_apis::start_job(http_api_container, registar.give_form(), servers::apis::Version::V1).await {
             jobs.push(job);

@@ -119,7 +119,7 @@ impl AppContainer {
     }
 
     #[must_use]
-    pub fn http_api_container(&self, http_api_config: &Arc<HttpApi>) -> TrackerHttpApiCoreContainer {
+    pub fn tracker_http_api_container(&self, http_api_config: &Arc<HttpApi>) -> TrackerHttpApiCoreContainer {
         TrackerHttpApiCoreContainer {
             http_api_config: http_api_config.clone(),
             core_config: self.core_config.clone(),
