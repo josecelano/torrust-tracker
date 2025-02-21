@@ -7,9 +7,9 @@ use std::sync::Arc;
 
 use axum::routing::get;
 use axum::Router;
+use torrust_tracker_api_core::container::HttpApiContainer;
 
 use super::handlers::get_stats_handler;
-use crate::container::HttpApiContainer;
 
 /// It adds the routes to the router for the [`stats`](crate::servers::apis::v1::context::stats) API context.
 pub fn add(prefix: &str, router: Router, http_api_container: &Arc<HttpApiContainer>) -> Router {

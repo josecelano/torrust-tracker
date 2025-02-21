@@ -38,11 +38,11 @@ use torrust_axum_server::signals::graceful_shutdown;
 use torrust_server_lib::logging::STARTED_ON;
 use torrust_server_lib::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};
 use torrust_server_lib::signals::{Halted, Started};
+use torrust_tracker_api_core::container::HttpApiContainer;
 use torrust_tracker_configuration::AccessTokens;
 use tracing::{instrument, Level};
 
 use super::routes::router;
-use crate::container::HttpApiContainer;
 use crate::servers::apis::API_LOG_TARGET;
 
 /// Errors that can occur when starting or stopping the API server.
@@ -296,10 +296,10 @@ mod tests {
 
     use torrust_axum_server::tsl::make_rust_tls;
     use torrust_server_lib::registar::Registar;
+    use torrust_tracker_api_core::container::initialize_http_api_container;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::initialize_global_services;
-    use crate::container::initialize_http_api_container;
     use crate::servers::apis::server::{ApiServer, Launcher};
 
     #[tokio::test]

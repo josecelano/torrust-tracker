@@ -18,9 +18,9 @@ use tokio::sync::RwLock;
 use torrust_axum_server::tsl::make_rust_tls;
 use torrust_server_lib::registar::Registar;
 use torrust_tracker_api_client::connection_info::{ConnectionInfo, Origin};
+use torrust_tracker_api_core::container::HttpApiContainer;
 use torrust_tracker_configuration::{Configuration, HttpApi};
 use torrust_tracker_lib::bootstrap::app::initialize_global_services;
-use torrust_tracker_lib::container::HttpApiContainer;
 use torrust_tracker_lib::servers::apis::server::{ApiServer, Launcher, Running, Stopped};
 use torrust_tracker_primitives::peer;
 

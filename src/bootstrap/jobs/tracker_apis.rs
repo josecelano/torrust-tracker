@@ -27,10 +27,10 @@ use axum_server::tls_rustls::RustlsConfig;
 use tokio::task::JoinHandle;
 use torrust_axum_server::tsl::make_rust_tls;
 use torrust_server_lib::registar::ServiceRegistrationForm;
+use torrust_tracker_api_core::container::HttpApiContainer;
 use torrust_tracker_configuration::AccessTokens;
 use tracing::instrument;
 
-use crate::container::HttpApiContainer;
 use crate::servers::apis::server::{ApiServer, Launcher};
 use crate::servers::apis::Version;
 
@@ -98,11 +98,11 @@ mod tests {
     use std::sync::Arc;
 
     use torrust_server_lib::registar::Registar;
+    use torrust_tracker_api_core::container::initialize_http_api_container;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::initialize_global_services;
     use crate::bootstrap::jobs::tracker_apis::start_job;
-    use crate::container::initialize_http_api_container;
     use crate::servers::apis::Version;
 
     #[tokio::test]
