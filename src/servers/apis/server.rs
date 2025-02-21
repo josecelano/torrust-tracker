@@ -38,7 +38,7 @@ use torrust_axum_server::signals::graceful_shutdown;
 use torrust_server_lib::logging::STARTED_ON;
 use torrust_server_lib::registar::{ServiceHealthCheckJob, ServiceRegistration, ServiceRegistrationForm};
 use torrust_server_lib::signals::{Halted, Started};
-use torrust_tracker_api_core::container::HttpApiContainer;
+use torrust_tracker_api_core::container::TrackerHttpApiCoreContainer;
 use torrust_tracker_configuration::AccessTokens;
 use tracing::{instrument, Level};
 
@@ -125,7 +125,7 @@ impl ApiServer<Stopped> {
     #[instrument(skip(self, http_api_container, form, access_tokens), err, ret(Display, level = Level::INFO))]
     pub async fn start(
         self,
-        http_api_container: Arc<HttpApiContainer>,
+        http_api_container: Arc<TrackerHttpApiCoreContainer>,
         form: ServiceRegistrationForm,
         access_tokens: Arc<AccessTokens>,
     ) -> Result<ApiServer<Running>, Error> {
@@ -238,7 +238,7 @@ impl Launcher {
     #[instrument(skip(self, http_api_container, access_tokens, tx_start, rx_halt))]
     pub fn start(
         &self,
-        http_api_container: Arc<HttpApiContainer>,
+        http_api_container: Arc<TrackerHttpApiCoreContainer>,
         access_tokens: Arc<AccessTokens>,
         tx_start: Sender<Started>,
         rx_halt: Receiver<Halted>,
@@ -296,7 +296,7 @@ mod tests {
 
     use torrust_axum_server::tsl::make_rust_tls;
     use torrust_server_lib::registar::Registar;
-    use torrust_tracker_api_core::container::HttpApiContainer;
+    use torrust_tracker_api_core::container::TrackerHttpApiCoreContainer;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
     use crate::bootstrap::app::initialize_global_services;
@@ -306,7 +306,11 @@ mod tests {
     async fn it_should_be_able_to_start_and_stop() {
         let cfg = Arc::new(ephemeral_public());
         let core_config = Arc::new(cfg.core.clone());
-        let http_api_config = Arc::new(cfg.http_api.clone().unwrap());
+        let http_tracker_config = cfg.http_trackers.clone().expect("missing HTTP tracker configuration");
+        let http_tracker_config = Arc::new(http_tracker_config[0].clone());
+        let udp_tracker_configurations = cfg.udp_trackers.clone().expect("missing UDP tracker configuration");
+        let udp_tracker_config = Arc::new(udp_tracker_configurations[0].clone());
+        let http_api_config = Arc::new(cfg.http_api.clone().expect("missing HTTP API configuration").clone());
 
         initialize_global_services(&cfg);
 
@@ -322,7 +326,8 @@ mod tests {
 
         let register = &Registar::default();
 
-        let http_api_container = HttpApiContainer::initialize(&core_config, &http_api_config);
+        let http_api_container =
+            TrackerHttpApiCoreContainer::initialize(&core_config, &http_tracker_config, &udp_tracker_config, &http_api_config);
 
         let started = stopped
             .start(http_api_container, register.give_form(), access_tokens)
