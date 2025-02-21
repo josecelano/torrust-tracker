@@ -108,18 +108,7 @@ torrust-tracker-api-client = { version = "3.0.0-develop", path = "packages/track
 torrust-tracker-test-helpers = { version = "3.0.0-develop", path = "packages/test-helpers" }
 
 [workspace]
-members = [
-    "console/tracker-client",
-    "contrib/bencode",
-    "packages/configuration",
-    "packages/located-error",
-    "packages/primitives",
-    "packages/test-helpers",
-    "packages/torrent-repository",
-    "packages/tracker-api-client",
-    "packages/tracker-client",
-    "packages/tracker-core",
-]
+members = ["console/tracker-client"]
 
 [profile.dev]
 debug = 1
