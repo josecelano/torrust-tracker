@@ -62,7 +62,8 @@ mod tests {
 
     use super::spawner::Spawner;
     use super::Server;
-    use crate::bootstrap::app::{initialize_global_services, initialize_udt_tracker_container};
+    use crate::bootstrap::app::initialize_global_services;
+    use crate::container::initialize_udt_tracker_container;
 
     #[tokio::test]
     async fn it_should_be_able_to_start_and_stop() {

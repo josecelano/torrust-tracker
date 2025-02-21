@@ -100,8 +100,9 @@ mod tests {
     use torrust_server_lib::registar::Registar;
     use torrust_tracker_test_helpers::configuration::ephemeral_public;
 
-    use crate::bootstrap::app::{initialize_global_services, initialize_http_api_container};
+    use crate::bootstrap::app::initialize_global_services;
     use crate::bootstrap::jobs::tracker_apis::start_job;
+    use crate::container::initialize_http_api_container;
     use crate::servers::apis::Version;
 
     #[tokio::test]
