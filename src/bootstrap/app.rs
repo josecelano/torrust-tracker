@@ -33,7 +33,7 @@ use bittorrent_udp_tracker_core::MAX_CONNECTION_ID_ERRORS_PER_IP;
 use tokio::sync::RwLock;
 use torrust_tracker_clock::static_time;
 use torrust_tracker_configuration::validator::Validator;
-use torrust_tracker_configuration::{logging, Configuration, Core, HttpApi, Logging, UdpTracker};
+use torrust_tracker_configuration::{logging, Configuration, Core, HttpApi, UdpTracker};
 use tracing::instrument;
 
 use super::config::initialize_configuration;
@@ -81,7 +81,7 @@ pub fn check_seed() {
 #[instrument(skip())]
 pub fn initialize_global_services(configuration: &Configuration) {
     initialize_static();
-    initialize_logging(&configuration.logging);
+    logging::setup(&configuration.logging);
 }
 
 /// It initializes the IoC Container.
@@ -247,12 +247,4 @@ pub fn initialize_static() {
 
     // Initialize the Zeroed Cipher
     lazy_static::initialize(&ephemeral_instance_keys::ZEROED_TEST_CIPHER_BLOWFISH);
-}
-
-/// It initializes the log threshold, format and channel.
-///
-/// See [the logging setup](torrust_tracker_configuration::logging::setup) for more info about logging.
-#[instrument(skip(logging_config))]
-pub fn initialize_logging(logging_config: &Logging) {
-    logging::setup(logging_config);
 }
