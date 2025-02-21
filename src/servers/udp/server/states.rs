@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
+use bittorrent_udp_tracker_core::container::UdpTrackerCoreContainer;
 use bittorrent_udp_tracker_core::UDP_TRACKER_LOG_TARGET;
 use derive_more::derive::Display;
 use derive_more::Constructor;
@@ -63,7 +63,7 @@ impl Server<Stopped> {
     #[instrument(skip(self, udp_tracker_container, form), err, ret(Display, level = Level::INFO))]
     pub async fn start(
         self,
-        udp_tracker_container: Arc<UdpTrackerContainer>,
+        udp_tracker_container: Arc<UdpTrackerCoreContainer>,
         form: ServiceRegistrationForm,
         cookie_lifetime: Duration,
     ) -> Result<Server<Running>, std::io::Error> {

@@ -10,7 +10,7 @@ use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepo
 use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentTorrentRepository;
 use bittorrent_tracker_core::whitelist::authorization::WhitelistAuthorization;
 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
-use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
+use bittorrent_udp_tracker_core::container::UdpTrackerCoreContainer;
 use bittorrent_udp_tracker_core::services::banning::BanService;
 use bittorrent_udp_tracker_core::{statistics, MAX_CONNECTION_ID_ERRORS_PER_IP};
 use tokio::sync::RwLock;
@@ -26,7 +26,7 @@ pub struct Environment<S>
 where
     S: std::fmt::Debug + std::fmt::Display,
 {
-    pub udp_tracker_container: Arc<UdpTrackerContainer>,
+    pub udp_tracker_container: Arc<UdpTrackerCoreContainer>,
 
     pub database: Arc<Box<dyn Database>>,
     pub in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
@@ -58,14 +58,14 @@ impl Environment<Stopped> {
 
         let server = Server::new(Spawner::new(bind_to));
 
-        let udp_tracker_container = Arc::new(UdpTrackerContainer {
+        let udp_tracker_container = Arc::new(UdpTrackerCoreContainer {
             udp_tracker_config: env_container.udp_tracker_config.clone(),
             core_config: env_container.core_config.clone(),
-            announce_handler: env_container.udp_tracker_container.announce_handler.clone(),
-            scrape_handler: env_container.udp_tracker_container.scrape_handler.clone(),
-            whitelist_authorization: env_container.udp_tracker_container.whitelist_authorization.clone(),
-            udp_stats_event_sender: env_container.udp_tracker_container.udp_stats_event_sender.clone(),
-            ban_service: env_container.udp_tracker_container.ban_service.clone(),
+            announce_handler: env_container.udp_tracker_core_container.announce_handler.clone(),
+            scrape_handler: env_container.udp_tracker_core_container.scrape_handler.clone(),
+            whitelist_authorization: env_container.udp_tracker_core_container.whitelist_authorization.clone(),
+            udp_stats_event_sender: env_container.udp_tracker_core_container.udp_stats_event_sender.clone(),
+            ban_service: env_container.udp_tracker_core_container.ban_service.clone(),
         });
 
         Self {
@@ -134,7 +134,7 @@ impl Environment<Running> {
 pub struct EnvContainer {
     pub core_config: Arc<Core>,
     pub udp_tracker_config: Arc<UdpTracker>,
-    pub udp_tracker_container: Arc<UdpTrackerContainer>,
+    pub udp_tracker_core_container: Arc<UdpTrackerCoreContainer>,
 
     pub database: Arc<Box<dyn Database>>,
     pub in_memory_torrent_repository: Arc<InMemoryTorrentRepository>,
@@ -169,7 +169,7 @@ impl EnvContainer {
 
         let scrape_handler = Arc::new(ScrapeHandler::new(&whitelist_authorization, &in_memory_torrent_repository));
 
-        let udp_tracker_container = Arc::new(UdpTrackerContainer {
+        let udp_tracker_container = Arc::new(UdpTrackerCoreContainer {
             udp_tracker_config: udp_tracker_config.clone(),
             core_config: core_config.clone(),
             announce_handler: announce_handler.clone(),
@@ -182,7 +182,7 @@ impl EnvContainer {
         Self {
             core_config,
             udp_tracker_config,
-            udp_tracker_container,
+            udp_tracker_core_container: udp_tracker_container,
 
             database,
             in_memory_torrent_repository,

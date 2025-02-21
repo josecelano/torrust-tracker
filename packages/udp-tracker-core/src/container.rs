@@ -10,7 +10,7 @@ use torrust_tracker_configuration::{Core, UdpTracker};
 use crate::services::banning::BanService;
 use crate::{statistics, MAX_CONNECTION_ID_ERRORS_PER_IP};
 
-pub struct UdpTrackerContainer {
+pub struct UdpTrackerCoreContainer {
     pub core_config: Arc<Core>,
     pub udp_tracker_config: Arc<UdpTracker>,
     pub announce_handler: Arc<AnnounceHandler>,
@@ -24,16 +24,15 @@ pub struct UdpTrackerContainer {
 pub fn initialize_udt_tracker_container(
     core_config: &Arc<Core>,
     udp_tracker_config: &Arc<UdpTracker>,
-) -> Arc<UdpTrackerContainer> {
+) -> Arc<UdpTrackerCoreContainer> {
     let tracker_core_container = TrackerCoreContainer::initialize(core_config);
 
-    // UDP stats
     let (udp_stats_event_sender, _udp_stats_repository) = statistics::setup::factory(core_config.tracker_usage_statistics);
     let udp_stats_event_sender = Arc::new(udp_stats_event_sender);
 
     let ban_service = Arc::new(RwLock::new(BanService::new(MAX_CONNECTION_ID_ERRORS_PER_IP)));
 
-    Arc::new(UdpTrackerContainer {
+    Arc::new(UdpTrackerCoreContainer {
         udp_tracker_config: udp_tracker_config.clone(),
         core_config: core_config.clone(),
         announce_handler: tracker_core_container.announce_handler.clone(),

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use aquatic_udp_protocol::Response;
-use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
+use bittorrent_udp_tracker_core::container::UdpTrackerCoreContainer;
 use bittorrent_udp_tracker_core::{self, statistics};
 use tokio::time::Instant;
 use tracing::{instrument, Level};
@@ -15,12 +15,12 @@ use crate::servers::udp::{handlers, RawRequest};
 
 pub struct Processor {
     socket: Arc<BoundSocket>,
-    udp_tracker_container: Arc<UdpTrackerContainer>,
+    udp_tracker_container: Arc<UdpTrackerCoreContainer>,
     cookie_lifetime: f64,
 }
 
 impl Processor {
-    pub fn new(socket: Arc<BoundSocket>, udp_tracker_container: Arc<UdpTrackerContainer>, cookie_lifetime: f64) -> Self {
+    pub fn new(socket: Arc<BoundSocket>, udp_tracker_container: Arc<UdpTrackerCoreContainer>, cookie_lifetime: f64) -> Self {
         Self {
             socket,
             udp_tracker_container,

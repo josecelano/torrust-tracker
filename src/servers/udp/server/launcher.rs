@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bittorrent_tracker_client::udp::client::check;
-use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
+use bittorrent_udp_tracker_core::container::UdpTrackerCoreContainer;
 use bittorrent_udp_tracker_core::{self, statistics, UDP_TRACKER_LOG_TARGET};
 use derive_more::Constructor;
 use futures_util::StreamExt;
@@ -36,7 +36,7 @@ impl Launcher {
     /// It panics if the udp server is loaded when the tracker is private.
     #[instrument(skip(udp_tracker_container, bind_to, tx_start, rx_halt))]
     pub async fn run_with_graceful_shutdown(
-        udp_tracker_container: Arc<UdpTrackerContainer>,
+        udp_tracker_container: Arc<UdpTrackerCoreContainer>,
         bind_to: SocketAddr,
         cookie_lifetime: Duration,
         tx_start: oneshot::Sender<Started>,
@@ -114,7 +114,7 @@ impl Launcher {
     #[instrument(skip(receiver, udp_tracker_container))]
     async fn run_udp_server_main(
         mut receiver: Receiver,
-        udp_tracker_container: Arc<UdpTrackerContainer>,
+        udp_tracker_container: Arc<UdpTrackerCoreContainer>,
         cookie_lifetime: Duration,
     ) {
         let active_requests = &mut ActiveRequests::default();

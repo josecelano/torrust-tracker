@@ -13,7 +13,7 @@ use bittorrent_tracker_core::torrent::repository::persisted::DatabasePersistentT
 use bittorrent_tracker_core::whitelist;
 use bittorrent_tracker_core::whitelist::manager::WhitelistManager;
 use bittorrent_tracker_core::whitelist::repository::in_memory::InMemoryWhitelist;
-use bittorrent_udp_tracker_core::container::UdpTrackerContainer;
+use bittorrent_udp_tracker_core::container::UdpTrackerCoreContainer;
 use bittorrent_udp_tracker_core::services::banning::BanService;
 use bittorrent_udp_tracker_core::{self, MAX_CONNECTION_ID_ERRORS_PER_IP};
 use tokio::sync::RwLock;
@@ -62,8 +62,8 @@ impl AppContainer {
     }
 
     #[must_use]
-    pub fn udp_tracker_container(&self, udp_tracker_config: &Arc<UdpTracker>) -> UdpTrackerContainer {
-        UdpTrackerContainer {
+    pub fn udp_tracker_container(&self, udp_tracker_config: &Arc<UdpTracker>) -> UdpTrackerCoreContainer {
+        UdpTrackerCoreContainer {
             udp_tracker_config: udp_tracker_config.clone(),
             core_config: self.core_config.clone(),
             announce_handler: self.announce_handler.clone(),
