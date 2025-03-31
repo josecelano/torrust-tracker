@@ -4,7 +4,7 @@ use bittorrent_tracker_core::torrent::repository::in_memory::InMemoryTorrentRepo
 use bittorrent_udp_tracker_core::services::banning::BanService;
 use bittorrent_udp_tracker_core::{self};
 use tokio::sync::RwLock;
-use torrust_tracker_primitives::metrics::LabeledMetrics;
+use torrust_tracker_primitives::metrics::LabeledMetricCollection;
 use torrust_tracker_primitives::swarm_metadata::AggregateSwarmMetadata;
 use torrust_udp_tracker_server::statistics as udp_server_statistics;
 
@@ -81,7 +81,7 @@ pub async fn get_metrics(
 #[derive(Debug, PartialEq)]
 pub struct TrackerLabeledMetrics {
     // Extendable metrics
-    pub labeled_metrics: LabeledMetrics,
+    pub labeled_metrics: LabeledMetricCollection,
 }
 
 /// It returns all the [`TrackerLabeledMetrics`]

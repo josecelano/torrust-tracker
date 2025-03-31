@@ -1,7 +1,7 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use tokio::sync::{RwLock, RwLockReadGuard};
+use torrust_tracker_primitives::metrics::{LabelSet, MetricName};
 
 use super::metrics::Metrics;
 
@@ -53,9 +53,9 @@ impl Repository {
         drop(stats_lock);
     }
 
-    pub async fn increase_counter(&self, metric_name: &str, metric_labels: &BTreeMap<String, String>) {
+    pub async fn increase_counter(&self, metric_name: &MetricName, labels: &LabelSet) {
         let mut stats_lock = self.stats.write().await;
-        stats_lock.increase_counter(metric_name, metric_labels);
+        stats_lock.increase_counter(metric_name, labels);
         drop(stats_lock);
     }
 }

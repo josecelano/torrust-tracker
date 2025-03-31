@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::net::IpAddr;
 
+use torrust_tracker_primitives::metrics::{LabelName, LabelSet, LabelValue, MetricName};
+
 use crate::event::Event;
 use crate::statistics::repository::Repository;
 
@@ -31,12 +33,16 @@ pub async fn handle_event(event: Event, stats_repository: &Repository) {
 
             stats_repository
                 .increase_counter(
-                    "announce_requests_received_total",
-                    &BTreeMap::from([
-                        ("ip_version".to_string(), ip_version),
-                        ("protocol".to_string(), "http".to_string()),
-                        ("url".to_string(), format!("http://{}", connection.server_socket_addr())), // todo: use the actual scheme
-                    ]),
+                    &MetricName::new("announce_requests_received_total"),
+                    &LabelSet::new(BTreeMap::from([
+                        (LabelName::new("ip_version"), LabelValue::new(&ip_version)),
+                        (LabelName::new("protocol"), LabelValue::new("http")),
+                        (
+                            LabelName::new("url"),
+                            // todo: use the actual scheme
+                            LabelValue::new(&format!("http://{}", connection.server_socket_addr())), // // DevSkim: ignore DS137138
+                        ),
+                    ])),
                 )
                 .await;
         }
@@ -61,12 +67,16 @@ pub async fn handle_event(event: Event, stats_repository: &Repository) {
 
             stats_repository
                 .increase_counter(
-                    "scrape_requests_received_total",
-                    &BTreeMap::from([
-                        ("ip_version".to_string(), ip_version),
-                        ("protocol".to_string(), "http".to_string()),
-                        ("url".to_string(), format!("http://{}", connection.server_socket_addr())), // todo: use the actual scheme
-                    ]),
+                    &MetricName::new("scrape_requests_received_total"),
+                    &LabelSet::new(BTreeMap::from([
+                        (LabelName::new("ip_version"), LabelValue::new(&ip_version)),
+                        (LabelName::new("protocol"), LabelValue::new("http")),
+                        (
+                            LabelName::new("url"),
+                            // todo: use the actual scheme
+                            LabelValue::new(&format!("http://{}", connection.server_socket_addr())), // DevSkim: ignore DS137138
+                        ),
+                    ])),
                 )
                 .await;
         }
