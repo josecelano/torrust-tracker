@@ -5,6 +5,7 @@
 //! by the tracker server crate, but also by other crates in the Torrust
 //! ecosystem.
 pub mod core;
+pub mod metrics;
 pub mod pagination;
 pub mod peer;
 pub mod service_binding;
