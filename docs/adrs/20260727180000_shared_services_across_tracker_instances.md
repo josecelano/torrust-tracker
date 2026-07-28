@@ -4,6 +4,8 @@ semantic-links:
     - docs/adrs/index.md
     - docs/events-architecture.md
     - packages/udp-core/src/container.rs
+    - packages/udp-server/src/container.rs
+    - packages/rest-api-runtime-adapter/src/v1/adapters/stats.rs
     - packages/udp-core/src/services/banning.rs
     - packages/http-core/src/container.rs
     - packages/tracker-core/src/container.rs
@@ -24,7 +26,9 @@ Each listener binds to a different address/port but shares core infrastructure:
 - **Ban service** (`BanService` in `UdpTrackerCoreServices`) — all UDP instances
   share the same IP-ban state. An IP banned on one UDP listener is banned on all.
 - **Event buses** — core-layer events are shared via a single `Broadcaster`
-  channel per protocol type; server-layer events are per-instance.
+  channel per protocol type. The current UDP server event bus is application
+  wide. Metrics configuration is consumer policy: it must not determine
+  whether objective facts are emitted or available to the banning listener.
 - **Statistics repositories** — each protocol layer has a single shared
   repository that aggregates metrics from all instances.
 
@@ -35,17 +39,17 @@ Each listener binds to a different address/port but shares core infrastructure:
 The following services are created once and shared across all instances of the
 same type:
 
-| Service                                       | Location                                      | Shared? | Rationale                                                                                                                                                                                                       |
-| --------------------------------------------- | --------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Peer repository                               | `TrackerCoreContainer`                        | Yes     | All listeners serve the same swarm                                                                                                                                                                              |
-| Swarm coordination registry                   | `SwarmCoordinationRegistryContainer`          | Yes     | Single source of truth for swarm state                                                                                                                                                                          |
-| UDP ban service                               | `UdpTrackerCoreServices::ban_service`         | Yes     | Resource protection: an attacker should not be able to consume N× resources by attacking N listeners independently                                                                                              |
-| UDP core event bus                            | `UdpTrackerCoreServices::broadcaster`         | Yes     | Core events (connect, announce, scrape) are objective facts about the swarm, not about a specific listener. A single `Broadcaster` channel is shared; per-instance `EventBus` gates sending via `SenderStatus`. |
-| UDP core services (connect, announce, scrape) | `UdpTrackerCoreContainer` (per instance)      | No      | Per-instance; each container creates its own services with a per-instance `EventBus` that wraps the shared `Broadcaster`. Services are stateless but need per-instance `tracker_usage_statistics` gating.       |
-| HTTP core event bus                           | `HttpTrackerCoreServices::broadcaster`        | Yes     | Same pattern as UDP core. Single `Broadcaster` shared across all HTTP instances.                                                                                                                                |
-| HTTP core services (announce, scrape)         | `HttpTrackerCoreContainer` (per instance)     | No      | Per-instance; each container creates its own services with a per-instance `EventBus`.                                                                                                                           |
-| UDP server event bus                          | `UdpTrackerServerContainer::event_bus`        | **No**  | Per-instance; server events (request accepted, banned, error) are specific to one listener                                                                                                                      |
-| UDP server stats repository                   | `UdpTrackerServerContainer::stats_repository` | **No**  | Per-instance; each listener has its own statistics                                                                                                                                                              |
+| Service                                       | Location                                      | Shared? | Rationale                                                                                                                                                                                                        |
+| --------------------------------------------- | --------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Peer repository                               | `TrackerCoreContainer`                        | Yes     | All listeners serve the same swarm                                                                                                                                                                               |
+| Swarm coordination registry                   | `SwarmCoordinationRegistryContainer`          | Yes     | Single source of truth for swarm state                                                                                                                                                                           |
+| UDP ban service                               | `UdpTrackerCoreServices::ban_service`         | Yes     | Resource protection: an attacker should not be able to consume N× resources by attacking N listeners independently                                                                                               |
+| UDP core event bus                            | `UdpTrackerCoreServices::broadcaster`         | Yes     | Core events (connect, announce, scrape) are objective facts about the swarm. A single `Broadcaster` channel is shared. Current producer-side gating is transitional; target metrics policy belongs in listeners. |
+| UDP core services (connect, announce, scrape) | `UdpTrackerCoreContainer` (per instance)      | No      | Per-instance; each container creates its own services with a per-instance `EventBus` that wraps the shared `Broadcaster`. Services are stateless but need per-instance `tracker_usage_statistics` gating.        |
+| HTTP core event bus                           | `HttpTrackerCoreServices::broadcaster`        | Yes     | Same pattern as UDP core. Single `Broadcaster` shared across all HTTP instances; metrics filtering should be listener-owned.                                                                                     |
+| HTTP core services (announce, scrape)         | `HttpTrackerCoreContainer` (per instance)     | No      | Per-instance; each container creates its own services with a per-instance `EventBus`.                                                                                                                            |
+| UDP server event bus                          | `UdpTrackerServerContainer::event_bus`        | Yes     | Currently one application-wide stream for all UDP listeners. Metrics must filter by listener identity; banning consumes all relevant events.                                                                     |
+| UDP server stats repository                   | `UdpTrackerServerContainer::stats_repository` | Yes     | Currently aggregates server-layer metrics for all UDP listeners. A shared repository is compatible with per-instance metrics policy when the metrics listener filters events.                                    |
 
 ### Why the ban service is shared
 
@@ -101,10 +105,19 @@ not to distinguish. If per-instance statistics are needed in the future,
 instance metadata can be added to the event payload without changing the
 broadcasting topology.
 
-The UDP **server** layer uses per-instance event buses because server-level
-events (request received, banned, error) are specific to one listener's
-network binding and are not aggregated across instances. This is documented
-in [events-architecture.md](../events-architecture.md).
+The UDP **server** layer currently uses one application-wide event bus and
+repository. This does not prevent per-listener metrics configuration: the
+metrics listener can filter events by stable listener identity before updating
+the aggregate repository, while the banning listener continues consuming every
+security-relevant event. This preserves the distinction between operator-facing
+TOML configuration and the internal container topology. See
+[events-architecture.md](../events-architecture.md).
+
+The same principle applies to HTTP core and UDP core: a metrics-disabled public
+listener does not mean its objective events did not occur. It means metrics
+consumers ignore that listener's events. This normalizes listener semantics
+across layers and prevents a metrics setting from suppressing security or future
+non-metrics consumers.
 
 ### Consequences
 
