@@ -62,14 +62,27 @@ The local reproduction is recorded in [evidence.md](evidence.md).
 
 ## Implementation Plan
 
-| ID  | Status | Task                                   | Notes / Expected Output                                                                                |
-| --- | ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| T1  | DONE   | Add failing HTTP bootstrap regression  | Ignored stats-contract regression records the current `2 != 1` failure.                                |
-| T2  | TODO   | Add failing UDP bootstrap regression   | Same identity preservation for UDP instances.                                                          |
-| T3  | TODO   | Replace address-keyed container lookup | Startup aligns each configuration entry with its own initialized container.                            |
-| T4  | TODO   | Remove obsolete address lookup API     | No bootstrap path relies on configured `SocketAddr` uniqueness.                                        |
-| T5  | TODO   | Correlate bootstrap lifecycle logs     | Every HTTP and UDP lifecycle event that emits a configured or final binding includes `instance_index`. |
-| T6  | TODO   | Run focused and workspace validation   | Record before/after evidence in this issue folder.                                                     |
+### Design Decisions
+
+- **Storage**: Replace `HashMap<SocketAddr, Arc<HttpTrackerCoreContainer>>` with a newtype wrapper
+  around `Vec<Arc<HttpTrackerCoreContainer>>` (and similarly for UDP). The wrapper exposes
+  index-based access and is named to make the configuration-position identity explicit.
+- **Lookup removal**: Remove `http_tracker_container(bind_address)` and
+  `udp_tracker_container(bind_address)` from `AppContainer`. The startup loop in `app.rs`
+  already iterates with `enumerate()` and will pass containers directly to the start functions.
+- **Registar**: If registar collision issues arise during implementation and can be fixed without
+  implementing #2036, fix them here. Otherwise defer to #2036 or merge both if tightly coupled.
+
+### Task Table
+
+| ID  | Status | Task                                    | Notes / Expected Output                                                                                                                                                                                                                             |
+| --- | ------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1  | DONE   | Add failing HTTP bootstrap regression   | `the_stats_api_endpoint_should_exclude_announces_from_a_tracker_with_statistics_disabled` in `tests/servers/api/contract/stats/mod.rs` records the current `2 != 1` failure.                                                                        |
+| T2  | TODO   | Add failing UDP bootstrap regression    | Add equivalent integration test for UDP instances with duplicate `0.0.0.0:0` bindings and different config.                                                                                                                                         |
+| T3  | TODO   | Replace address-keyed container storage | Replace `HashMap<SocketAddr, _>` with a wrapped `Vec`-based type indexed by configuration position. The wrapper type should expose index-based access methods. Pass containers directly from the config loop in `app.rs` (no address-based lookup). |
+| T4  | TODO   | Remove obsolete address lookup API      | Remove `http_tracker_container(bind_address)` and `udp_tracker_container(bind_address)`. Startup passes containers directly from the configuration iteration.                                                                                       |
+| T5  | TODO   | Correlate bootstrap lifecycle logs      | Every HTTP and UDP lifecycle event that emits a configured or final binding includes `instance_index`.                                                                                                                                              |
+| T6  | TODO   | Run focused and workspace validation    | Record before/after evidence in this issue folder.                                                                                                                                                                                                  |
 
 ## Progress Tracking
 
