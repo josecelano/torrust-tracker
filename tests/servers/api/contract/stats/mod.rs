@@ -5,6 +5,16 @@ use url::Url;
 
 use crate::common::{self, EphemeralTrackerWorkspace};
 
+// TODO (issue #1419): Add a shared-event-bus integration test that:
+//   1. Starts two HTTP tracker instances with tracker_usage_statistics=true.
+//   2. Sets up a single event listener on the shared broadcaster.
+//   3. Announces to both instances.
+//   4. Verifies the listener received events from both instances.
+//   Repeat for UDP. This validates the shared broadcaster pattern documented
+//   in docs/adrs/20260727180000_shared_services_across_tracker_instances.md
+//   and docs/events-architecture.md.
+//   Blocked by: issue #1419 (multiple integration tests at main app level).
+
 /// The stats API endpoint should aggregate announces across multiple HTTP tracker instances.
 ///
 /// This is an application-level integration test. It verifies that announces
@@ -90,11 +100,9 @@ async fn the_stats_api_endpoint_should_return_the_global_stats() {
 
 /// A disabled tracker must not contribute to global statistics.
 ///
-/// This regression is ignored until
-/// `fix-duplicate-port-zero-tracker-instance-bootstrap` preserves an individual container for
-/// every repeated `0.0.0.0:0` configuration entry. At present, the address-keyed bootstrap map
-/// makes both listeners use the later enabled configuration, so both announces are counted.
-#[ignore = "blocked by fix-duplicate-port-zero-tracker-instance-bootstrap"]
+/// This regression verifies that when two HTTP blocks share `0.0.0.0:0` and
+/// differ only in `tracker_usage_statistics`, the disabled instance does not
+/// count announces in global stats.
 #[tokio::test]
 async fn the_stats_api_endpoint_should_exclude_announces_from_a_tracker_with_statistics_disabled() {
     let config_toml = r#"
@@ -163,7 +171,6 @@ async fn the_stats_api_endpoint_should_exclude_announces_from_a_tracker_with_sta
 /// UDP tracker instances. When two UDP blocks share `0.0.0.0:0` and differ
 /// only in `tracker_usage_statistics`, the disabled instance must not count
 /// announces in global stats.
-#[ignore = "blocked by fix-duplicate-port-zero-tracker-instance-bootstrap"]
 #[tokio::test]
 async fn udp_stats_should_exclude_announces_from_a_tracker_with_statistics_disabled() {
     use std::net::Ipv4Addr;
