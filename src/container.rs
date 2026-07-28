@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use std::net::SocketAddr;
 use std::sync::Arc;
 
 use torrust_server_lib::registar::Registar;
@@ -13,13 +11,76 @@ use torrust_tracker_udp_core::{self};
 use torrust_tracker_udp_server::container::UdpTrackerServerContainer;
 use tracing::instrument;
 
-#[derive(thiserror::Error, Debug, Clone)]
-pub enum Error {
-    #[error("There is not a HTTP tracker server instance bound to the socket address: {bind_address}")]
-    MissingHttpTrackerCoreContainer { bind_address: SocketAddr },
+/// Ordered collection of HTTP tracker instance containers, indexed by
+/// configuration entry position.
+///
+/// Each element corresponds to one `[[http_trackers]]` block in the
+/// configuration file. The position in the vector is the instance identity.
+#[derive(Clone)]
+pub struct HttpTrackerInstanceContainers(Vec<Arc<HttpTrackerCoreContainer>>);
 
-    #[error("There is not a UDP tracker server instance bound to the socket address: {bind_address}")]
-    MissingUdpTrackerCoreContainer { bind_address: SocketAddr },
+impl HttpTrackerInstanceContainers {
+    #[must_use]
+    pub const fn new(containers: Vec<Arc<HttpTrackerCoreContainer>>) -> Self {
+        Self(containers)
+    }
+
+    /// Returns the container at the given configuration index.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds. Callers should validate
+    /// the index against the configuration length before calling.
+    #[must_use]
+    pub fn get(&self, index: usize) -> &Arc<HttpTrackerCoreContainer> {
+        &self.0[index]
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+/// Ordered collection of UDP tracker instance containers, indexed by
+/// configuration entry position.
+///
+/// Each element corresponds to one `[[udp_trackers]]` block in the
+/// configuration file. The position in the vector is the instance identity.
+#[derive(Clone)]
+pub struct UdpTrackerInstanceContainers(Vec<Arc<UdpTrackerCoreContainer>>);
+
+impl UdpTrackerInstanceContainers {
+    #[must_use]
+    pub const fn new(containers: Vec<Arc<UdpTrackerCoreContainer>>) -> Self {
+        Self(containers)
+    }
+
+    /// Returns the container at the given configuration index.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds. Callers should validate
+    /// the index against the configuration length before calling.
+    #[must_use]
+    pub fn get(&self, index: usize) -> &Arc<UdpTrackerCoreContainer> {
+        &self.0[index]
+    }
+
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 pub struct AppContainer {
@@ -37,12 +98,12 @@ pub struct AppContainer {
 
     // HTTP
     pub http_tracker_core_services: Arc<HttpTrackerCoreServices>,
-    pub http_tracker_instance_containers: Arc<HashMap<SocketAddr, Arc<HttpTrackerCoreContainer>>>,
+    pub http_tracker_instance_containers: Arc<HttpTrackerInstanceContainers>,
 
     // UDP
     pub udp_tracker_core_services: Arc<UdpTrackerCoreServices>,
     pub udp_tracker_server_container: Arc<UdpTrackerServerContainer>,
-    pub udp_tracker_instance_containers: Arc<HashMap<SocketAddr, Arc<UdpTrackerCoreContainer>>>,
+    pub udp_tracker_instance_containers: Arc<UdpTrackerInstanceContainers>,
 }
 
 impl AppContainer {
@@ -130,28 +191,6 @@ impl AppContainer {
         self.udp_tracker_server_container.clone()
     }
 
-    /// # Errors
-    ///
-    /// Return an error if there is no HTTP tracker server instance bound to the
-    /// socket address.
-    pub fn http_tracker_container(&self, bind_address: SocketAddr) -> Result<Arc<HttpTrackerCoreContainer>, Error> {
-        self.http_tracker_instance_containers.get(&bind_address).map_or_else(
-            || Err(Error::MissingHttpTrackerCoreContainer { bind_address }),
-            |http_tracker_container| Ok(http_tracker_container.clone()),
-        )
-    }
-
-    /// # Errors
-    ///
-    /// Return an error if there is no UDP tracker server instance bound to the
-    /// socket address.
-    pub fn udp_tracker_container(&self, bind_address: SocketAddr) -> Result<Arc<UdpTrackerCoreContainer>, Error> {
-        self.udp_tracker_instance_containers.get(&bind_address).map_or_else(
-            || Err(Error::MissingUdpTrackerCoreContainer { bind_address }),
-            |udp_tracker_container| Ok(udp_tracker_container.clone()),
-        )
-    }
-
     #[must_use]
     pub fn tracker_http_api_container(&self, http_api_config: &Arc<HttpApi>) -> Arc<TrackerHttpApiCoreContainer> {
         TrackerHttpApiCoreContainer {
@@ -175,23 +214,21 @@ impl AppContainer {
         configuration: &Configuration,
         tracker_core_container: &Arc<TrackerCoreContainer>,
         http_tracker_core_services: &Arc<HttpTrackerCoreServices>,
-    ) -> Arc<HashMap<SocketAddr, Arc<HttpTrackerCoreContainer>>> {
-        let mut http_tracker_instance_containers = HashMap::new();
+    ) -> Arc<HttpTrackerInstanceContainers> {
+        let mut containers = Vec::new();
 
         if let Some(http_trackers) = &configuration.http_trackers {
             for http_tracker_config in http_trackers {
-                http_tracker_instance_containers.insert(
-                    http_tracker_config.bind_address,
-                    HttpTrackerCoreContainer::initialize_from_services(
-                        tracker_core_container,
-                        http_tracker_core_services,
-                        &Arc::new(http_tracker_config.clone()),
-                    ),
-                );
+                containers.push(HttpTrackerCoreContainer::initialize_from_services(
+                    tracker_core_container,
+                    &http_tracker_core_services.broadcaster,
+                    &http_tracker_core_services.stats_repository,
+                    &Arc::new(http_tracker_config.clone()),
+                ));
             }
         }
 
-        Arc::new(http_tracker_instance_containers)
+        Arc::new(HttpTrackerInstanceContainers::new(containers))
     }
 
     #[must_use]
@@ -199,22 +236,21 @@ impl AppContainer {
         configuration: &Configuration,
         tracker_core_container: &Arc<TrackerCoreContainer>,
         udp_tracker_core_services: &Arc<UdpTrackerCoreServices>,
-    ) -> Arc<HashMap<SocketAddr, Arc<UdpTrackerCoreContainer>>> {
-        let mut udp_tracker_instance_containers = HashMap::new();
+    ) -> Arc<UdpTrackerInstanceContainers> {
+        let mut containers = Vec::new();
 
         if let Some(udp_trackers) = &configuration.udp_trackers {
             for udp_tracker_config in udp_trackers {
-                udp_tracker_instance_containers.insert(
-                    udp_tracker_config.bind_address,
-                    UdpTrackerCoreContainer::initialize_from_services(
-                        tracker_core_container,
-                        udp_tracker_core_services,
-                        &Arc::new(udp_tracker_config.clone()),
-                    ),
-                );
+                containers.push(UdpTrackerCoreContainer::initialize_from_services(
+                    tracker_core_container,
+                    &udp_tracker_core_services.broadcaster,
+                    &udp_tracker_core_services.stats_repository,
+                    &udp_tracker_core_services.ban_service,
+                    &Arc::new(udp_tracker_config.clone()),
+                ));
             }
         }
 
-        Arc::new(udp_tracker_instance_containers)
+        Arc::new(UdpTrackerInstanceContainers::new(containers))
     }
 }

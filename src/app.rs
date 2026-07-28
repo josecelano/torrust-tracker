@@ -238,13 +238,17 @@ async fn start_udp_instance(
     app_container: &Arc<AppContainer>,
     job_manager: &mut JobManager,
 ) {
-    let udp_tracker_container = app_container
-        .udp_tracker_container(udp_tracker_config.bind_address)
-        .expect("Could not create UDP tracker container");
+    let udp_tracker_container = app_container.udp_tracker_instance_containers.get(idx);
     let udp_tracker_server_container = app_container.udp_tracker_server_container();
 
+    tracing::info!(
+        instance_index = idx,
+        bind_address = %udp_tracker_config.bind_address,
+        "Starting UDP tracker instance"
+    );
+
     let handle = udp_tracker::start_job(
-        udp_tracker_container,
+        udp_tracker_container.clone(),
         udp_tracker_server_container,
         app_container.registar.give_form(),
     )
@@ -269,12 +273,16 @@ async fn start_http_instance(
     app_container: &Arc<AppContainer>,
     job_manager: &mut JobManager,
 ) {
-    let http_tracker_container = app_container
-        .http_tracker_container(http_tracker_config.bind_address)
-        .expect("Could not create HTTP tracker container");
+    let http_tracker_container = app_container.http_tracker_instance_containers.get(idx);
+
+    tracing::info!(
+        instance_index = idx,
+        bind_address = %http_tracker_config.bind_address,
+        "Starting HTTP tracker instance"
+    );
 
     if let Some(handle) = http_tracker::start_job(
-        http_tracker_container,
+        http_tracker_container.clone(),
         app_container.registar.give_form(),
         torrust_tracker_axum_http_server::Version::V1,
     )

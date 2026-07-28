@@ -13,7 +13,7 @@ pub fn start_event_listener(
 ) -> Option<JoinHandle<()>> {
     if config.core.tracker_usage_statistics {
         let job = torrust_tracker_http_core::statistics::event::listener::run_event_listener(
-            app_container.http_tracker_core_services.event_bus.receiver(),
+            Box::new(app_container.http_tracker_core_services.broadcaster.subscribe()),
             cancellation_token,
             &app_container.http_tracker_core_services.stats_repository,
         );

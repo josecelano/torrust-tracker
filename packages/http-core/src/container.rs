@@ -9,14 +9,14 @@ use crate::event::sender::Broadcaster;
 use crate::services::announce::AnnounceService;
 use crate::services::scrape::ScrapeService;
 use crate::statistics::repository::Repository;
-use crate::{event, services, statistics};
+use crate::{event, statistics};
 
 pub struct HttpTrackerCoreContainer {
     pub http_tracker_config: Arc<HttpTracker>,
 
     pub tracker_core_container: Arc<TrackerCoreContainer>,
 
-    // `HttpTrackerCoreServices`
+    // Per-instance services
     pub event_bus: Arc<event::bus::EventBus>,
     pub stats_event_sender: event::sender::Sender,
     pub stats_repository: Arc<statistics::repository::Repository>,
@@ -42,71 +42,85 @@ impl HttpTrackerCoreContainer {
         tracker_core_container: &Arc<TrackerCoreContainer>,
         http_tracker_config: &Arc<HttpTracker>,
     ) -> Arc<Self> {
-        let http_tracker_core_services = HttpTrackerCoreServices::initialize_from(tracker_core_container);
+        let shared_services = HttpTrackerCoreServices::initialize_from(tracker_core_container);
 
-        Self::initialize_from_services(tracker_core_container, &http_tracker_core_services, http_tracker_config)
+        Self::initialize_from_services(
+            tracker_core_container,
+            &shared_services.broadcaster,
+            &shared_services.stats_repository,
+            http_tracker_config,
+        )
     }
 
+    /// Creates a per-instance container with its own EventBus and services.
+    ///
+    /// The `broadcaster` is shared across all instances so the global event
+    /// listener receives events from every instance. The per-instance
+    /// `EventBus` uses the individual `tracker_usage_statistics` setting to
+    /// control whether events are actually sent.
     #[must_use]
     pub fn initialize_from_services(
         tracker_core_container: &Arc<TrackerCoreContainer>,
-        http_tracker_core_services: &Arc<HttpTrackerCoreServices>,
+        broadcaster: &Broadcaster,
+        stats_repository: &Arc<statistics::repository::Repository>,
         http_tracker_config: &Arc<HttpTracker>,
     ) -> Arc<Self> {
-        Arc::new(Self {
-            tracker_core_container: tracker_core_container.clone(),
-            http_tracker_config: http_tracker_config.clone(),
-            event_bus: http_tracker_core_services.event_bus.clone(),
-            stats_event_sender: http_tracker_core_services.stats_event_sender.clone(),
-            stats_repository: http_tracker_core_services.stats_repository.clone(),
-            announce_service: http_tracker_core_services.announce_service.clone(),
-            scrape_service: http_tracker_core_services.scrape_service.clone(),
-        })
-    }
-}
-
-pub struct HttpTrackerCoreServices {
-    pub event_bus: Arc<event::bus::EventBus>,
-    pub stats_event_sender: event::sender::Sender,
-    pub stats_repository: Arc<statistics::repository::Repository>,
-    pub announce_service: Arc<services::announce::AnnounceService>,
-    pub scrape_service: Arc<services::scrape::ScrapeService>,
-}
-
-impl HttpTrackerCoreServices {
-    #[must_use]
-    pub fn initialize_from(tracker_core_container: &Arc<TrackerCoreContainer>) -> Arc<Self> {
-        // HTTP core stats
-        let http_core_broadcaster = Broadcaster::default();
-        let http_stats_repository = Arc::new(Repository::new());
-        let http_stats_event_bus = Arc::new(EventBus::new(
-            tracker_core_container.core_config.tracker_usage_statistics.into(),
-            http_core_broadcaster.clone(),
+        let per_instance_event_bus = Arc::new(EventBus::new(
+            http_tracker_config.tracker_usage_statistics.into(),
+            broadcaster.clone(),
         ));
 
-        let http_stats_event_sender = http_stats_event_bus.sender();
+        let per_instance_stats_event_sender = per_instance_event_bus.sender();
 
-        let http_announce_service = Arc::new(AnnounceService::new(
+        let announce_service = Arc::new(AnnounceService::new(
             tracker_core_container.core_config.clone(),
             tracker_core_container.announce_handler.clone(),
             tracker_core_container.authentication_service.clone(),
             tracker_core_container.whitelist_authorization.clone(),
-            http_stats_event_sender.clone(),
+            per_instance_stats_event_sender.clone(),
         ));
 
-        let http_scrape_service = Arc::new(ScrapeService::new(
+        let scrape_service = Arc::new(ScrapeService::new(
             tracker_core_container.core_config.clone(),
             tracker_core_container.scrape_handler.clone(),
             tracker_core_container.authentication_service.clone(),
-            http_stats_event_sender.clone(),
+            per_instance_stats_event_sender.clone(),
         ));
 
         Arc::new(Self {
-            event_bus: http_stats_event_bus,
-            stats_event_sender: http_stats_event_sender,
-            stats_repository: http_stats_repository,
-            announce_service: http_announce_service,
-            scrape_service: http_scrape_service,
+            tracker_core_container: tracker_core_container.clone(),
+            http_tracker_config: http_tracker_config.clone(),
+            event_bus: per_instance_event_bus,
+            stats_event_sender: per_instance_stats_event_sender,
+            stats_repository: stats_repository.clone(),
+            announce_service,
+            scrape_service,
+        })
+    }
+}
+
+/// Shared infrastructure across all HTTP tracker instances.
+///
+/// Contains only the resources that are genuinely shared: the broadcaster
+/// channel (so the global event listener receives events from all instances)
+/// and the statistics repository (aggregated across all instances).
+///
+/// Per-instance services (announce, scrape) are created in
+/// [`HttpTrackerCoreContainer::initialize_from_services`].
+pub struct HttpTrackerCoreServices {
+    pub broadcaster: Broadcaster,
+    pub stats_repository: Arc<statistics::repository::Repository>,
+}
+
+impl HttpTrackerCoreServices {
+    #[must_use]
+    pub fn initialize_from(_tracker_core_container: &Arc<TrackerCoreContainer>) -> Arc<Self> {
+        let broadcaster = Broadcaster::default();
+        let stats_repository = Arc::new(Repository::new());
+
+        Arc::new(Self {
+            broadcaster,
+            stats_repository,
         })
     }
 }
