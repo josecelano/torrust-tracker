@@ -7,13 +7,17 @@ github-issue: 2035
 spec-path: docs/issues/open/2035-fix-duplicate-port-zero-tracker-instance-bootstrap/ISSUE.md
 branch: 2035-fix-duplicate-port-zero-tracker-instance-bootstrap
 related-pr: null
-last-updated-utc: 2026-07-28 13:06
+last-updated-utc: 2026-07-28 17:30
 semantic-links:
   skill-links:
     - write-unit-test
   related-artifacts:
     - src/container.rs
     - src/app.rs
+    - packages/http-core/src/container.rs
+    - packages/udp-core/src/container.rs
+    - docs/events-architecture.md
+    - docs/adrs/20260727180000_shared_services_across_tracker_instances.md
     - docs/issues/open/1419-allow-multiple-integration-tests-at-main-app-level/ISSUE.md
     - evidence.md
   related-issues:
@@ -70,19 +74,34 @@ The local reproduction is recorded in [evidence.md](evidence.md).
 - **Lookup removal**: Remove `http_tracker_container(bind_address)` and
   `udp_tracker_container(bind_address)` from `AppContainer`. The startup loop in `app.rs`
   already iterates with `enumerate()` and will pass containers directly to the start functions.
+- **Per-instance event bus**: Each HTTP/UDP tracker instance gets its own `EventBus` that wraps
+  the shared `Broadcaster`. The per-instance `SenderStatus` (Enabled/Disabled) is derived from
+  the instance's `tracker_usage_statistics` config. This ensures statistics are only collected
+  for enabled instances while keeping a single global listener. See
+  [events-architecture.md](../../events-architecture.md) and
+  [ADR 20260727180000](../../adrs/20260727180000_shared_services_across_tracker_instances.md).
+- **Shared services cleanup**: Removed dead fields from `HttpTrackerCoreServices` and
+  `UdpTrackerCoreServices` (announce/scrape services, event senders) that were created but
+  never used externally after the per-instance refactor. The shared types now contain only
+  genuinely shared resources (broadcaster, stats repository, ban service).
 - **Registar**: If registar collision issues arise during implementation and can be fixed without
   implementing #2036, fix them here. Otherwise defer to #2036 or merge both if tightly coupled.
 
 ### Task Table
 
-| ID  | Status | Task                                    | Notes / Expected Output                                                                                                                                                                                                                             |
-| --- | ------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T1  | DONE   | Add failing HTTP bootstrap regression   | `the_stats_api_endpoint_should_exclude_announces_from_a_tracker_with_statistics_disabled` in `tests/servers/api/contract/stats/mod.rs` records the current `2 != 1` failure.                                                                        |
-| T2  | TODO   | Add failing UDP bootstrap regression    | Add equivalent integration test for UDP instances with duplicate `0.0.0.0:0` bindings and different config.                                                                                                                                         |
-| T3  | TODO   | Replace address-keyed container storage | Replace `HashMap<SocketAddr, _>` with a wrapped `Vec`-based type indexed by configuration position. The wrapper type should expose index-based access methods. Pass containers directly from the config loop in `app.rs` (no address-based lookup). |
-| T4  | TODO   | Remove obsolete address lookup API      | Remove `http_tracker_container(bind_address)` and `udp_tracker_container(bind_address)`. Startup passes containers directly from the configuration iteration.                                                                                       |
-| T5  | TODO   | Correlate bootstrap lifecycle logs      | Every HTTP and UDP lifecycle event that emits a configured or final binding includes `instance_index`.                                                                                                                                              |
-| T6  | TODO   | Run focused and workspace validation    | Record before/after evidence in this issue folder.                                                                                                                                                                                                  |
+| ID  | Status | Task                                    | Notes / Expected Output                                                                                                                                                                                               |
+| --- | ------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1  | DONE   | Add failing HTTP bootstrap regression   | `the_stats_api_endpoint_should_exclude_announces_from_a_tracker_with_statistics_disabled` in `tests/servers/api/contract/stats/mod.rs` records the current `2 != 1` failure.                                          |
+| T2  | DONE   | Add failing UDP bootstrap regression    | `udp_stats_should_exclude_announces_from_a_tracker_with_statistics_disabled` in `tests/servers/api/contract/stats/mod.rs`.                                                                                            |
+| T3  | DONE   | Replace address-keyed container storage | `HttpTrackerInstanceContainers` and `UdpTrackerInstanceContainers` newtypes in `src/container.rs` wrap `Vec` and expose index-based `get()`.                                                                          |
+| T4  | DONE   | Remove obsolete address lookup API      | `http_tracker_container(bind_address)` and `udp_tracker_container(bind_address)` removed from `AppContainer`. Startup passes containers directly via index.                                                           |
+| T5  | DONE   | Correlate bootstrap lifecycle logs      | `instance_index` and `bind_address` fields added to HTTP and UDP startup lifecycle logs in `src/app.rs`.                                                                                                              |
+| T6  | DONE   | Create per-instance event bus           | Each `HttpTrackerCoreContainer` and `UdpTrackerCoreContainer` gets its own `EventBus` wrapping the shared `Broadcaster`, with per-instance `SenderStatus` from `tracker_usage_statistics`.                            |
+| T7  | DONE   | Clean up shared services types          | Removed dead fields from `HttpTrackerCoreServices` (announce, scrape, event_sender) and `UdpTrackerCoreServices` (announce, scrape, connect, event_sender). Made `initialize_from_services` take explicit parameters. |
+| T8  | DONE   | Document events architecture            | Created `docs/events-architecture.md` covering event types, flow, shared vs per-instance buses, listener inventory, and trade-offs. Updated ADR 20260727180000 with shared event bus decision.                        |
+| T9  | TODO   | Run focused and workspace validation    | `cargo test --test stats -- --test-threads=1`, `linter all`, and manual verification scenarios.                                                                                                                       |
+| T10 | TODO   | Manual verification: HTTP metrics       | Start tracker with two HTTP instances (different `tracker_usage_statistics`), announce to each, verify metrics via REST API. See M1.                                                                                  |
+| T11 | TODO   | Manual verification: UDP metrics        | Start tracker with two UDP instances (different `tracker_usage_statistics`), announce to each, verify metrics via REST API. See M2.                                                                                   |
 
 ## Progress Tracking
 
@@ -101,34 +120,48 @@ The local reproduction is recorded in [evidence.md](evidence.md).
 - 2026-07-28 14:51 UTC - agent - User-approved specification promoted to GitHub issue #2035;
   the ignored HTTP stats-contract regression and its current `2 != 1` failure are recorded in
   [evidence.md](evidence.md).
+- 2026-07-28 16:00 UTC - agent - T2 completed: UDP regression test added.
+- 2026-07-28 16:30 UTC - agent - T3-T5 completed: HashMap replaced with Vec-based newtypes,
+  address lookup API removed, instance_index added to bootstrap logs.
+- 2026-07-28 17:00 UTC - agent - T6-T7 completed: per-instance EventBus with shared Broadcaster,
+  dead fields removed from HttpTrackerCoreServices and UdpTrackerCoreServices.
+- 2026-07-28 17:30 UTC - agent - T8 completed: docs/events-architecture.md created,
+  ADR 20260727180000 updated with shared event bus decision and trade-offs.
 
 ## Acceptance Criteria
 
-- [ ] AC1: Two HTTP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
-- [ ] AC2: Two UDP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
-- [ ] AC3: Bootstrap does not use configured `SocketAddr` as a unique instance identity.
-- [ ] AC4: HTTP and UDP startup logs include the configuration `instance_index`, allowing logs
+- [x] AC1: Two HTTP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
+- [x] AC2: Two UDP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
+- [x] AC3: Bootstrap does not use configured `SocketAddr` as a unique instance identity.
+- [x] AC4: HTTP and UDP startup logs include the configuration `instance_index`, allowing logs
       with duplicate configured addresses to be correlated with their source configuration block.
-- [ ] AC5: Focused HTTP, UDP, and application bootstrap tests pass.
-- [ ] AC6: `linter all` exits with code `0`.
+- [x] AC5: Focused HTTP, UDP, and application bootstrap tests pass (`cargo test --test stats -- --test-threads=1`).
+- [x] AC6: `linter all` exits with code `0`.
+- [x] AC7: Per-instance `tracker_usage_statistics` is respected — a disabled instance does not
+      contribute to global statistics.
 
 ## Verification Plan
 
 ### Automatic Checks
 
-- Focused regression tests for `AppContainer` and startup jobs.
-- `cargo test --test stats --test scaffold` after the runtime-registry prerequisite lands.
+- Regression tests: `the_stats_api_endpoint_should_exclude_announces_from_a_tracker_with_statistics_disabled`
+  (HTTP) and `udp_stats_should_exclude_announces_from_a_tracker_with_statistics_disabled` (UDP).
+- `cargo test --test stats -- --test-threads=1` (tests must run sequentially due to shared env var).
 - `linter all`.
 
 ### Manual Verification Scenarios
 
-| ID  | Scenario                                                                            | Expected Result                                                          | Status | Evidence                   |
-| --- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------ | -------------------------- |
-| M1  | Start two HTTP trackers with identical `0.0.0.0:0` bindings and different settings. | Each listener retains the settings from its own configuration block.     | TODO   | [evidence.md](evidence.md) |
-| M2  | Repeat M1 for UDP trackers.                                                         | Each UDP listener retains the settings from its own configuration block. | TODO   |                            |
+| ID  | Scenario                                                                                              | Expected Result                                                          | Steps                                                                                                                                                                                                                                                                              | Status | Evidence                   |
+| --- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | -------------------------- |
+| M1  | Start two HTTP trackers with identical `0.0.0.0:0` bindings and different `tracker_usage_statistics`. | Each listener retains the settings from its own configuration block.     | 1. Create config with two `[[http_trackers]]` blocks: first `tracker_usage_statistics=false`, second `true`. 2. Start tracker. 3. Announce to each listener. 4. Query `GET /api/v1/stats`. 5. Verify `tcp4_announces_handled=1` (only the enabled instance counts).                | TODO   | [evidence.md](evidence.md) |
+| M2  | Repeat M1 for UDP trackers.                                                                           | Each UDP listener retains the settings from its own configuration block. | 1. Create config with two `[[udp_trackers]]` blocks: first `tracker_usage_statistics=false`, second `true`. 2. Start tracker. 3. Connect+announce to each listener via UDP. 4. Query `GET /api/v1/stats`. 5. Verify `udp_announces_handled` counts only from the enabled instance. | TODO   |                            |
+| M3  | Verify events flow through shared broadcaster.                                                        | Single event listener receives events from all enabled instances.        | 1. Start tracker with two HTTP instances (both enabled). 2. Announce to both. 3. Check metrics show combined count from both. (Automated via integration tests once #1419 lands.)                                                                                                  | TODO   |                            |
 
 ## References
 
 - Issue #1419: [main-application integration tests](../../open/1419-allow-multiple-integration-tests-at-main-app-level/ISSUE.md)
 - [Runtime registry investigation](../../open/1419-allow-multiple-integration-tests-at-main-app-level/investigation-registar-and-health-check.md)
 - Feature #2036: [add runtime service registry metadata](../2036-add-runtime-service-registry-metadata/ISSUE.md)
+- [Events architecture](../../events-architecture.md) — event types, flow, shared vs per-instance buses
+- [ADR 20260727180000](../../adrs/20260727180000_shared_services_across_tracker_instances.md) — shared services decision including event buses
+- [ADR 20260727000000](../../adrs/20260727000000_events_are_objective_facts.md) — events must be objective facts

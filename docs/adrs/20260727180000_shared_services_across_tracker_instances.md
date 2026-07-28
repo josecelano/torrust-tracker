@@ -2,8 +2,10 @@
 semantic-links:
   related-artifacts:
     - docs/adrs/index.md
+    - docs/events-architecture.md
     - packages/udp-core/src/container.rs
     - packages/udp-core/src/services/banning.rs
+    - packages/http-core/src/container.rs
     - packages/tracker-core/src/container.rs
     - packages/configuration/src/v3_0_0/udp_tracker_server.rs
     - src/container.rs
@@ -21,11 +23,10 @@ Each listener binds to a different address/port but shares core infrastructure:
   multiple listeners: they serve the same swarm.
 - **Ban service** (`BanService` in `UdpTrackerCoreServices`) — all UDP instances
   share the same IP-ban state. An IP banned on one UDP listener is banned on all.
-- **Event buses** — core-layer events (`UdpTrackerCoreServices`) are shared;
-  server-layer events (`UdpTrackerServerContainer`) are per-instance.
-
-This ADR documents the shared-services design and the rationale for keeping
-certain services global rather than per-instance.
+- **Event buses** — core-layer events are shared via a single `Broadcaster`
+  channel per protocol type; server-layer events are per-instance.
+- **Statistics repositories** — each protocol layer has a single shared
+  repository that aggregates metrics from all instances.
 
 ## Agreement
 
@@ -34,15 +35,17 @@ certain services global rather than per-instance.
 The following services are created once and shared across all instances of the
 same type:
 
-| Service                                       | Location                                      | Shared? | Rationale                                                                                                          |
-| --------------------------------------------- | --------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
-| Peer repository                               | `TrackerCoreContainer`                        | Yes     | All listeners serve the same swarm                                                                                 |
-| Swarm coordination registry                   | `SwarmCoordinationRegistryContainer`          | Yes     | Single source of truth for swarm state                                                                             |
-| UDP ban service                               | `UdpTrackerCoreServices::ban_service`         | Yes     | Resource protection: an attacker should not be able to consume N× resources by attacking N listeners independently |
-| UDP core event bus                            | `UdpTrackerCoreServices::event_bus`           | Yes     | Core events (connect, announce, scrape) are objective facts about the swarm, not about a specific listener         |
-| UDP core services (connect, announce, scrape) | `UdpTrackerCoreServices`                      | Yes     | Stateless service objects; they read from the shared peer repository                                               |
-| UDP server event bus                          | `UdpTrackerServerContainer::event_bus`        | **No**  | Per-instance; server events (request accepted, banned, error) are specific to one listener                         |
-| UDP server stats repository                   | `UdpTrackerServerContainer::stats_repository` | **No**  | Per-instance; each listener has its own statistics                                                                 |
+| Service                                       | Location                                      | Shared? | Rationale                                                                                                                                                                                                       |
+| --------------------------------------------- | --------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Peer repository                               | `TrackerCoreContainer`                        | Yes     | All listeners serve the same swarm                                                                                                                                                                              |
+| Swarm coordination registry                   | `SwarmCoordinationRegistryContainer`          | Yes     | Single source of truth for swarm state                                                                                                                                                                          |
+| UDP ban service                               | `UdpTrackerCoreServices::ban_service`         | Yes     | Resource protection: an attacker should not be able to consume N× resources by attacking N listeners independently                                                                                              |
+| UDP core event bus                            | `UdpTrackerCoreServices::broadcaster`         | Yes     | Core events (connect, announce, scrape) are objective facts about the swarm, not about a specific listener. A single `Broadcaster` channel is shared; per-instance `EventBus` gates sending via `SenderStatus`. |
+| UDP core services (connect, announce, scrape) | `UdpTrackerCoreContainer` (per instance)      | No      | Per-instance; each container creates its own services with a per-instance `EventBus` that wraps the shared `Broadcaster`. Services are stateless but need per-instance `tracker_usage_statistics` gating.       |
+| HTTP core event bus                           | `HttpTrackerCoreServices::broadcaster`        | Yes     | Same pattern as UDP core. Single `Broadcaster` shared across all HTTP instances.                                                                                                                                |
+| HTTP core services (announce, scrape)         | `HttpTrackerCoreContainer` (per instance)     | No      | Per-instance; each container creates its own services with a per-instance `EventBus`.                                                                                                                           |
+| UDP server event bus                          | `UdpTrackerServerContainer::event_bus`        | **No**  | Per-instance; server events (request accepted, banned, error) are specific to one listener                                                                                                                      |
+| UDP server stats repository                   | `UdpTrackerServerContainer::stats_repository` | **No**  | Per-instance; each listener has its own statistics                                                                                                                                                              |
 
 ### Why the ban service is shared
 
@@ -81,6 +84,27 @@ the number of listeners. It also complicates the operator's mental model:
 Rejected because the primary reason to run multiple listeners is to serve
 the same swarm through different protocols or addresses. Isolated peer
 repositories would defeat this purpose.
+
+**Per-instance event broadcasters (one broadcast channel per listener).**
+
+Considered but rejected for core-layer events. With per-instance
+broadcasters, each listener would need its own event listener task, and
+aggregating statistics across instances would require combining N
+repositories. The shared broadcaster pattern keeps the bootstrap simple
+(one listener per protocol type) and naturally aggregates metrics.
+
+The trade-off is that events from all instances are mixed in the same
+channel. Instance-level filtering is not possible at the listener level.
+This is acceptable because core-layer events are objective facts about the
+swarm, not about a specific listener — the listener's job is to aggregate,
+not to distinguish. If per-instance statistics are needed in the future,
+instance metadata can be added to the event payload without changing the
+broadcasting topology.
+
+The UDP **server** layer uses per-instance event buses because server-level
+events (request received, banned, error) are specific to one listener's
+network binding and are not aggregated across instances. This is documented
+in [events-architecture.md](../events-architecture.md).
 
 ### Consequences
 
