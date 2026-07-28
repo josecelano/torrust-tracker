@@ -145,3 +145,30 @@ fn loopback_url(addr: SocketAddr) -> Url {
     }
     .expect("loopback URL should always be valid")
 }
+
+/// Returns the UDP tracker socket addresses from the registar.
+///
+/// UDP trackers bind to `0.0.0.0` (unspecified). We identify them by their
+/// unspecified IP and convert to loopback for client connections.
+#[allow(dead_code)]
+pub async fn udp_tracker_addresses(container: &AppContainer) -> Vec<SocketAddr> {
+    let reg = container.registar.entries();
+    let map = reg.lock().await;
+    map.keys()
+        .filter(|b| {
+            b.protocol() == torrust_net_primitives::service_binding::Protocol::UDP && b.bind_address().ip().is_unspecified()
+        })
+        .map(|b| loopback_socket_addr(b.bind_address()))
+        .collect()
+}
+
+/// Convert a socket address to a connectable loopback address.
+///
+/// Replaces wildcard IPv4 with `127.0.0.1`, preserving the OS-assigned port.
+const fn loopback_socket_addr(addr: SocketAddr) -> SocketAddr {
+    if addr.ip().is_unspecified() {
+        SocketAddr::new(std::net::IpAddr::V4(std::net::Ipv4Addr::LOCALHOST), addr.port())
+    } else {
+        addr
+    }
+}

@@ -66,6 +66,7 @@ deny = [
     "torrust-tracker-http-core",
   ] },
   { crate = "torrust-tracker-udp-protocol", wrappers = [
+    "torrust-tracker",
     "torrust-tracker-client-lib",
     "torrust-tracker-udp-core",
     "torrust-tracker-udp-server",

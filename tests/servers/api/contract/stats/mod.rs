@@ -157,6 +157,123 @@ async fn the_stats_api_endpoint_should_exclude_announces_from_a_tracker_with_sta
     assert_eq!(global_stats.tcp4_announces_handled, 1);
 }
 
+/// A disabled UDP tracker must not contribute to global statistics.
+///
+/// This regression verifies the same defect as the HTTP test above, but for
+/// UDP tracker instances. When two UDP blocks share `0.0.0.0:0` and differ
+/// only in `tracker_usage_statistics`, the disabled instance must not count
+/// announces in global stats.
+#[ignore = "blocked by fix-duplicate-port-zero-tracker-instance-bootstrap"]
+#[tokio::test]
+async fn udp_stats_should_exclude_announces_from_a_tracker_with_statistics_disabled() {
+    use std::net::Ipv4Addr;
+    use std::time::Duration;
+
+    use torrust_peer_id::PeerId;
+    use torrust_tracker_client::udp::client::UdpTrackerClient;
+    use torrust_tracker_udp_protocol::{
+        AnnounceActionPlaceholder, AnnounceEvent, AnnounceRequest, ConnectionId, InfoHash, NumberOfBytes, NumberOfPeers, PeerKey,
+        Port, TransactionId,
+    };
+
+    let config_toml = r#"
+        [metadata]
+        app = "torrust-tracker"
+        purpose = "configuration"
+        schema_version = "2.0.0"
+
+        [logging]
+        threshold = "off"
+
+        [core]
+        listed = false
+        private = false
+
+        [core.database]
+        driver = "sqlite3"
+        path = "{STORAGE_PATH}/sqlite3.db"
+
+        [[udp_trackers]]
+        bind_address = "0.0.0.0:0"
+        tracker_usage_statistics = false
+
+        [[udp_trackers]]
+        bind_address = "0.0.0.0:0"
+        tracker_usage_statistics = true
+
+        [http_api]
+        bind_address = "127.0.0.1:0"
+
+        [http_api.access_tokens]
+        admin = "MyAccessToken"
+
+        [health_check_api]
+        bind_address = "127.0.0.2:0"
+    "#;
+
+    let workspace = EphemeralTrackerWorkspace::new(config_toml);
+    let (app_container, _jobs) = common::start_tracker_with_config(&workspace).await;
+
+    let udp_addresses = common::udp_tracker_addresses(&app_container).await;
+    assert_eq!(udp_addresses.len(), 2, "expected two UDP trackers");
+
+    let api_url = common::http_api_url(&app_container).await.expect("expected an HTTP API URL");
+
+    let timeout = Duration::from_secs(5);
+    // 20-byte info hash (same as the HTTP test uses in its announce URL)
+    let info_hash = InfoHash([
+        0x9c, 0x8b, 0x22, 0x13, 0xe3, 0x0b, 0xff, 0x21, 0x2b, 0x30, 0xc3, 0x60, 0xd2, 0x6f, 0x9a, 0x02, 0x13, 0x64, 0x22, 0x00,
+    ]);
+
+    for addr in &udp_addresses {
+        let client = UdpTrackerClient::new(*addr, timeout)
+            .await
+            .expect("failed to create UDP client");
+
+        // Connect
+        let connect_request = torrust_tracker_udp_protocol::ConnectRequest {
+            transaction_id: TransactionId::new(1),
+        };
+        let connection_id = match client.send(connect_request.into()).await {
+            Ok(_) => match client.receive().await {
+                Ok(torrust_tracker_udp_protocol::Response::Connect(resp)) => resp.connection_id,
+                other => panic!("expected connect response, got {other:?}"),
+            },
+            Err(e) => panic!("connect failed: {e}"),
+        };
+
+        // Announce
+        let announce_request = AnnounceRequest {
+            connection_id: ConnectionId(connection_id.0),
+            action_placeholder: AnnounceActionPlaceholder::default(),
+            transaction_id: TransactionId::new(2),
+            info_hash,
+            peer_id: PeerId([255u8; 20]),
+            bytes_downloaded: NumberOfBytes(0i64.into()),
+            bytes_uploaded: NumberOfBytes(0i64.into()),
+            bytes_left: NumberOfBytes(0i64.into()),
+            event: AnnounceEvent::Started.into(),
+            ip_address: Ipv4Addr::UNSPECIFIED.into(),
+            key: PeerKey::new(0i32),
+            peers_wanted: NumberOfPeers(1i32.into()),
+            port: Port(17548u16.into()),
+        };
+        match client.send(announce_request.into()).await {
+            Ok(_) => match client.receive().await {
+                Ok(torrust_tracker_udp_protocol::Response::AnnounceIpv4(_)) => {}
+                other => panic!("expected announce response, got {other:?}"),
+            },
+            Err(e) => panic!("announce failed: {e}"),
+        }
+    }
+
+    let global_stats = get_tracker_statistics(&api_url, "MyAccessToken").await;
+    assert_eq!(
+        global_stats.tcp4_announces_handled, 0,
+        "UDP announces should not count in tcp4 stats"
+    );
+}
+
 /// Global statistics with only metrics relevant to the test.
 #[derive(Deserialize)]
 struct PartialGlobalStatistics {
