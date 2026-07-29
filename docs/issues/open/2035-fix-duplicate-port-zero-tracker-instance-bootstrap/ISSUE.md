@@ -7,7 +7,7 @@ github-issue: 2035
 spec-path: docs/issues/open/2035-fix-duplicate-port-zero-tracker-instance-bootstrap/ISSUE.md
 branch: 2035-fix-duplicate-port-zero-tracker-instance-bootstrap
 related-pr: null
-last-updated-utc: 2026-07-28 19:00
+last-updated-utc: 2026-07-29 07:20
 semantic-links:
   skill-links:
     - write-unit-test
@@ -21,6 +21,7 @@ semantic-links:
     - docs/events-architecture.md
     - docs/adrs/20260727180000_shared_services_across_tracker_instances.md
     - docs/issues/open/1419-allow-multiple-integration-tests-at-main-app-level/ISSUE.md
+    - ARCHIVED_ATTEMPT.md
     - evidence.md
   related-issues:
     - 1419
@@ -65,6 +66,31 @@ The local reproduction is recorded in [evidence.md](evidence.md).
 - Runtime registry metadata or health-check API changes.
 - Public endpoint, proxy, or DNS configuration.
 - User-supplied persistent service IDs in configuration.
+
+## Revised Delivery Plan
+
+The initial implementation attempt is archived rather than proposed for merge.
+See [ARCHIVED_ATTEMPT.md](ARCHIVED_ATTEMPT.md) and the reference branch
+`archive/2035-bootstrap-identity-attempt`.
+
+Manual verification found that preserving bootstrap identity alone cannot make
+the per-listener UDP metrics policy correct: UDP server metrics are still
+produced through a global event path. The attempt also showed that producer-side
+event suppression conflicts with UDP banning, a non-metrics consumer of the
+same objective event stream.
+
+Reimplement #2035 from scratch after these prerequisites land:
+
+1. #2036 defines canonical runtime service/configuration-instance identity and
+  registration metadata.
+2. The dedicated event-metrics normalization issue makes event publication
+  independent of metrics policy and filters metrics in listeners by that
+  canonical identity.
+3. #2035 is then reimplemented and verified with duplicate port-zero listeners
+  on top of those foundations.
+
+This issue remains open; no implementation from the archived branch is treated
+as accepted or complete.
 
 ## Implementation Plan
 
@@ -112,9 +138,9 @@ The local reproduction is recorded in [evidence.md](evidence.md).
 
 - [x] Specification drafted and approved by user/maintainer
 - [x] GitHub issue created: #2035
-- [x] Implementation completed
-- [x] Automatic verification completed (`linter all`, relevant tests)
-- [x] Manual verification scenarios executed and recorded (M1 done, M2 pending)
+- [ ] Implementation completed
+- [ ] Automatic verification completed (`linter all`, relevant tests)
+- [ ] Manual verification scenarios executed and recorded
 - [ ] Acceptance criteria reviewed after implementation
 - [ ] Issue closed and specification moved to `docs/issues/closed/`
 
@@ -148,17 +174,20 @@ The local reproduction is recorded in [evidence.md](evidence.md).
 - 2026-07-28 20:25 UTC - agent - Scope decision: normalize event publication and
   listener-side metrics filtering in a dedicated follow-up issue. This keeps
   #2035 focused on preserving configuration-instance identity during bootstrap.
+- 2026-07-29 07:20 UTC - agent - Archived the initial implementation attempt as
+  a reference after discovering the global UDP server metrics path. A new
+  implementation is deferred until #2036 and the dedicated event-metrics normalization issue land.
 
 ## Acceptance Criteria
 
-- [x] AC1: Two HTTP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
-- [x] AC2: Two UDP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
-- [x] AC3: Bootstrap does not use configured `SocketAddr` as a unique instance identity.
-- [x] AC4: HTTP and UDP startup logs include the configuration `instance_index`, allowing logs
+- [ ] AC1: Two HTTP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
+- [ ] AC2: Two UDP tracker blocks with the same `0.0.0.0:0` binding each start with their own configuration.
+- [ ] AC3: Bootstrap does not use configured `SocketAddr` as a unique instance identity.
+- [ ] AC4: HTTP and UDP startup logs include the configuration `instance_index`, allowing logs
       with duplicate configured addresses to be correlated with their source configuration block.
-- [x] AC5: Focused HTTP, UDP, and application bootstrap tests pass (`cargo test --test stats -- --test-threads=1`).
-- [x] AC6: `linter all` exits with code `0`.
-- [x] AC7: Per-instance `tracker_usage_statistics` is respected — a disabled instance does not
+- [ ] AC5: Focused HTTP, UDP, and application bootstrap tests pass (`cargo test --test stats -- --test-threads=1`).
+- [ ] AC6: `linter all` exits with code `0`.
+- [ ] AC7: Per-instance `tracker_usage_statistics` is respected — a disabled instance does not
       contribute to global statistics.
 - [x] AC8: Document the event layer asymmetry between HTTP and UDP trackers and
       defer its cross-layer normalization to a dedicated follow-up issue.
