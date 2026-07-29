@@ -82,12 +82,12 @@ same objective event stream.
 Reimplement #2035 from scratch after these prerequisites land:
 
 1. #2036 defines canonical runtime service/configuration-instance identity and
-  registration metadata.
+   registration metadata.
 2. The dedicated event-metrics normalization issue makes event publication
-  independent of metrics policy and filters metrics in listeners by that
-  canonical identity.
+   independent of metrics policy and filters metrics in listeners by that
+   canonical identity.
 3. #2035 is then reimplemented and verified with duplicate port-zero listeners
-  on top of those foundations.
+   on top of those foundations.
 
 This issue remains open; no implementation from the archived branch is treated
 as accepted or complete.
