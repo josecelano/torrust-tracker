@@ -71,9 +71,11 @@ so they are recorded as `Minor (inferred)`.
   suggested.
 - Solution: kept the extraction, because a skill is plain Markdown and cannot include a shared
   file, and the single `-f query='` block is the documented fallback itself. The helper's doc
-  comment now states that a layout change fails loudly and never passes falsely.
-- Current-tree verification: `git grep -n "fails loudly here" HEAD -- contrib/dev-tools/github/github-review-threads/src/lib.rs`
-  matches the doc comment at line 449; `cargo test --package github-review-threads` passes 15 unit
+  comment now states that a layout change fails loudly and never passes falsely. Round 2 (F7)
+  showed that wording overstated what the helper checked; it was narrowed and an exactly-one-block
+  assertion added.
+- Current-tree verification: `git grep -n "a missing or second block fails here" HEAD -- contrib/dev-tools/github/github-review-threads/src/lib.rs`
+  matches one line, the doc comment above `fn skill_fallback_query`; `cargo test --package github-review-threads` passes 15 unit
   and 7 CLI tests (stable Rust 1.98.1).
 - Resolution reference: `test(dev-tools): document fallback-query extraction and evidence-window intent`
 - Follow-up PR URL: N/A
@@ -91,7 +93,7 @@ so they are recorded as `Minor (inferred)`.
   threads, so requiring `line` and `resolvedBy { login }` next to it pins them at thread level,
   whereas `login` also occurs under comment authors.
 - Current-tree verification: `git grep -n "adjacency pins them" HEAD -- contrib/dev-tools/github/github-review-threads/src/lib.rs`
-  matches the Arrange comment at line 458; the test suite passes as in F1.
+  matches one line, the Arrange comment of `it_should_request_the_line_and_resolver_of_each_thread`; the test suite passes as in F1.
 - Resolution reference: `test(dev-tools): document fallback-query extraction and evidence-window intent`
 - Follow-up PR URL: N/A
 - Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111444602>
@@ -110,7 +112,8 @@ so they are recorded as `Minor (inferred)`.
   `docs/pr-reviews/pr-<PR_NUMBER>-review/PR-REVIEW.md` with the approval URL in its Ownership
   section; the checklist item names "the audit the follow-up created".
 - Current-tree verification: `git grep -n "or the audit the follow-up created" HEAD -- .github/skills/dev/pr-reviews/process-pr-review/SKILL.md`
-  matches line 293, and lines 126-132 carry the step 2 and step 3 sentences; `linter markdown` exits `0`.
+  matches one line, the post-merge follow-up checklist item; `git grep -n "durable comment alone satisfies this gate\|the follow-up branch creates" HEAD -- .github/skills/dev/pr-reviews/process-pr-review/SKILL.md`
+  matches the step 2 and step 3 sentences; `linter markdown` exits `0`.
 - Resolution reference: `docs(pr-reviews): cover post-merge follow-ups for PRs without an audit`
 - Follow-up PR URL: N/A
 - Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111444681>
@@ -125,8 +128,10 @@ so they are recorded as `Minor (inferred)`.
   that no longer exists; `develop` commit `2e36b46a` treats this field as navigational.
 - Solution: pointed the frontmatter entry at `docs/issues/closed/2333-2278-fetch-all-review-threads/ISSUE.md`;
   the dated narrative at lines 56, 62, and 77 and the EPIC 16:07 log line keep the path as it was.
-- Current-tree verification: `git grep -n "issues/open/2333" HEAD` now matches only those four
-  historical lines; line 7 names the `closed/` path.
+- Current-tree verification: `git grep -n "issues/open/2333" HEAD -- ':!docs/pr-reviews/pr-2344-review'`
+  matches four historical lines: the EPIC's 2026-09-24 16:07 UTC log entry and three narrative
+  lines of the PR #2334 audit. The exclusion stops this entry from matching its own command. The
+  PR #2334 audit's frontmatter names the `closed/` path.
 - Resolution reference: `docs(pr-reviews): point PR #2334 audit to the archived #2333 spec`
 - Follow-up PR URL: N/A
 - Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111444733>
@@ -141,7 +146,7 @@ so they are recorded as `Minor (inferred)`.
   artifacts should cite the immutable `review-finding:pr-<N>-<id>` reference.
 - Solution: the note now cites (`review-finding:pr-2339-f3`).
 - Current-tree verification: `git grep -n "review-finding:pr-2339-f3" HEAD -- docs/issues/closed/2333-2278-fetch-all-review-threads/manual-verification-evidence.md`
-  matches line 171.
+  matches one line, the correction note.
 - Resolution reference: `docs(issues): cite the #2333 evidence correction by its finding reference`
 - Follow-up PR URL: N/A
 - Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111444792>
