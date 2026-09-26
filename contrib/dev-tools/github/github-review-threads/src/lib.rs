@@ -446,8 +446,13 @@ mod tests {
             .collect()
     }
 
-    /// Reads the skill's `gh api graphql -f query='...'` block; a layout change fails loudly here, never silently.
+    /// Reads the skill's only `-f query='...'` block; a missing or second block fails here, a changed one fails parity.
     fn skill_fallback_query(skill: &str) -> &str {
+        assert_eq!(
+            skill.matches("-f query='").count(),
+            1,
+            "the skill should hold exactly one fallback query"
+        );
         let start = skill.find("-f query='").expect("the skill should hold a fallback query") + "-f query='".len();
         let length = skill[start..].find('\'').expect("the fallback query should be closed");
         &skill[start..start + length]
