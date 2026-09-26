@@ -49,6 +49,9 @@ are recorded as audit `F3`-`F6` (reviewer `F<k>` is audit `F<k+2>`), with the re
 detail entry. Copilot rated both of its findings "Medium", which is not in the severity vocabulary,
 so they are recorded as `Minor (inferred)`.
 
+Round 2 findings `F5`-`F7` from da2ce7 (reviews 5326065019 and 5326267066) collide with audit
+`F5`-`F6` and are recorded as audit `F7`-`F9` (reviewer `F<k>` is audit `F<k+2>`).
+
 | Finding ID | Review finding reference | Author class | Severity | Category | Relationship | Disposition | Thread state |
 | ---------- | ------------------------ | ------------ | -------- | -------- | ------------ | ----------- | ------------ |
 | F1 | `review-finding:pr-2344-f1` | Copilot | Minor (inferred) | testing | ORIGINAL | FIXED | RESOLVED |
@@ -57,6 +60,9 @@ so they are recorded as `Minor (inferred)`.
 | F4 | `review-finding:pr-2344-f4` | Human | Nit | link-integrity | ORIGINAL | FIXED | RESOLVED |
 | F5 | `review-finding:pr-2344-f5` | Human | Nit | documentation | ORIGINAL | FIXED | RESOLVED |
 | F6 | `review-finding:pr-2344-f6` | Human | Nit | metadata | ORIGINAL | FIXED | RESOLVED |
+| F7 | `review-finding:pr-2344-f7` | Human | Nit | testing | ORIGINAL | FIXED | RESOLVED |
+| F8 | `review-finding:pr-2344-f8` | Human | Nit | documentation | ORIGINAL | FIXED | RESOLVED |
+| F9 | `review-finding:pr-2344-f9` | Human | Nit | documentation | ORIGINAL | FIXED | RESOLVED |
 
 ## Finding Details
 
@@ -166,6 +172,58 @@ so they are recorded as `Minor (inferred)`.
 - Follow-up PR URL: N/A
 - Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111444836>
 
+### F7 - The fallback-query doc comment promises more than the helper checks
+
+- PR number: 2344
+- Source review ID: 5326065019
+- Reviewer finding ID: F5
+- Source URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111523041>
+- Concern: the F1 doc comment said a layout change "fails loudly here, never silently", but the
+  helper read only the first `-f query='` block, so a second block could drift while both tests
+  pass; the F1 Solution repeated the claim.
+- Solution: `skill_fallback_query` now asserts that the skill holds exactly one `-f query='`
+  block, and its doc comment says a missing or second block fails there and a changed one fails
+  the parity test. The F1 Solution notes the narrowing.
+- Current-tree verification: with the old helper restored in the working tree, appending a second
+  fallback block to the skill passed all 15 unit tests; with the new helper, the same mutant fails
+  `it_should_document_the_same_fallback_query_the_tool_sends`. Both files were restored before
+  committing, and the suite passes 15 unit and 7 CLI tests (stable Rust 1.98.1).
+- Resolution reference: `test(dev-tools): require exactly one skill fallback query block`
+- Follow-up PR URL: N/A
+- Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4112885461>
+
+### F8 - The F4 verification's recorded result cannot be reproduced
+
+- PR number: 2344
+- Source review ID: 5326065019
+- Reviewer finding ID: F6
+- Source URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111523043>
+- Concern: F4's `git grep -n "issues/open/2333" HEAD` had no path filter, so it also matched the
+  audit line quoting it and returned five lines, not the recorded four.
+- Solution: F4's command now excludes this audit, and its result names the four historical lines
+  by content.
+- Current-tree verification: `git grep -n "issues/open/2333" HEAD -- ':!docs/pr-reviews/pr-2344-review'`
+  returns the four lines F4 names.
+- Resolution reference: `docs(pr-reviews): make PR #2344 audit verifications reproducible at head`
+- Follow-up PR URL: N/A
+- Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4112885553>
+
+### F9 - The F3 verification cited a line number the rebase moved
+
+- PR number: 2344
+- Source review ID: 5326267066
+- Reviewer finding ID: F7
+- Source URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4111710920>
+- Concern: after the rebase onto `4fd1876c`, F3's recorded "line 293" is line 297, so the result
+  no longer reproduces.
+- Solution: F3 now records matched text instead of line numbers, and so do F1, F2, and F5, whose
+  cited `lib.rs` and evidence lines this round's changes could also move.
+- Current-tree verification: a search of this audit for line-number results (`at line N`,
+  `matches line N`, `lines N-M carry`) finds none; each F1-F5 command returns the text its entry names.
+- Resolution reference: `docs(pr-reviews): make PR #2344 audit verifications reproducible at head`
+- Follow-up PR URL: N/A
+- Reply URL: <https://github.com/torrust/torrust-tracker/pull/2344#discussion_r4112885623>
+
 ## Processing Log
 
 - 2026-09-26 13:03 UTC - Started audit for round 1: Copilot review 5325624421 (two inline
@@ -177,6 +235,13 @@ so they are recorded as `Minor (inferred)`.
 - 2026-09-26 13:09 UTC - After `docs(pr-reviews): add PR #2344 review audit` was pushed,
   `reply-status --login josecelano` reported 6 of 6 threads replied, and the six threads were
   resolved. A refreshed GraphQL fetch reports 6 threads, 0 unresolved, all resolved by `josecelano`.
+- 2026-09-26 21:40 UTC - Round 2: three da2ce7 `[Nit]` threads (reviews 5326065019 and
+  5326267066), recorded as F7-F9, arrived beside approvals at `5213cf15`. Fixed in
+  `test(dev-tools): require exactly one skill fallback query block` and
+  `docs(pr-reviews): make PR #2344 audit verifications reproducible at head`, pushed, and replied
+  on all three threads. Correction: that second commit changed in place the `Current-tree
+  verification` of F1-F5 (line numbers replaced by matched text, and F4's command given a
+  path filter) and added a sentence to F1's Solution; earlier log entries are unchanged.
 
 ## Completion Rules
 
