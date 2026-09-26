@@ -242,6 +242,9 @@ Round 2 findings `F5`-`F7` from da2ce7 (reviews 5326065019 and 5326267066) colli
   on all three threads. Correction: that second commit changed in place the `Current-tree
   verification` of F1-F5 (line numbers replaced by matched text, and F4's command given a
   path filter) and added a sentence to F1's Solution; earlier log entries are unchanged.
+- 2026-09-26 21:44 UTC - After `docs(pr-reviews): record PR #2344 review round 2` was pushed,
+  `reply-status --login josecelano` reported 3 of 3 unresolved threads replied, and the three
+  round-2 threads were resolved. A refreshed GraphQL fetch reports 9 threads, 0 unresolved.
 
 ## Completion Rules
 
