@@ -23,7 +23,7 @@ start. `Environment<Running>` owns the server task, the drain controller, and
 one `DropGuard`; `stop()` keeps its signature, joins both tasks, and panics
 naming each failing task. The health-check API contract test stops the REST API
 through `Environment::stop()`, and the task inventory records the migration.
-Evidence is in `manual-verification-evidence.md` (V0 to V4).
+Evidence is in `manual-verification-evidence.md` (V0 to V5).
 
 ## What Went Well
 
